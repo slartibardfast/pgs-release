@@ -1,0 +1,9 @@
+[submodule "punkgraphicstream"]
+	path = punkgraphicstream
+	url = https://github.com/slartibardfast/punkgraphicstream.git
+[submodule "libpgs-jni"]
+	path = libpgs-jni
+	url = https://github.com/slartibardfast/libpgs-jni.git
+[submodule "libass"]
+	path = libass
+	url = https://github.com/libass/libass.git

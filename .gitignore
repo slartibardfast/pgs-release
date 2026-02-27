@@ -1,0 +1,22 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+.settings/
+.project
+.classpath
+
+# Java / Maven
+target/
+*.class
+*.jar
+
+# Native build
+*.o
+*.so
+*.dylib
+*.jnilib
+
+# OS
+.DS_Store
+Thumbs.db
