@@ -2,16 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+"Work as if you live in the early days of a better world."
+
 ## Project Overview
 
 PunkGraphicStream (v0.7.2) converts ASS (Advanced SubStation Alpha) subtitle files into PGS/SUP (Presentation Graphic Stream) subtitle files for Blu-ray discs. It is a Java 1.6 application with a native C library (libpgs-jni) wrapping libass via JNI.
 
 ## Repository Structure
 
-Parent project with three git submodules:
+Parent project with four git submodules:
 - `punkgraphicstream/` - Main Java application (Maven project)
 - `libpgs-jni/` - Native C JNI wrapper around libass
 - `libass/` - libass library (pinned to 0.17.4)
+- `ffmpeg/` - FFmpeg (our upstream contribution branch)
+
+Key files:
+- `PLAN.md` - Master implementation plan for FFmpeg upstream contribution (read this first for FFmpeg work)
+- `docs/pgs-specification.md` - PGS format specification
 
 ## Build Commands
 
@@ -26,6 +33,15 @@ mvn clean                # Clean build artifacts
 ```
 
 Compiler warnings (`-Xlint:unchecked`, `-Xlint:deprecation`) are enabled.
+
+### FFmpeg (from `ffmpeg/`)
+
+```bash
+cd ffmpeg && ./configure --disable-doc && make -j$(nproc)  # Build
+FATE_SAMPLES=/tmp/fate-samples make fate-sub-pgs            # Run PGS FATE test
+```
+
+FFmpeg style: 4-space indent, no tabs, 80-char lines, K&R braces, `snake_case` functions.
 
 ## Architecture
 
