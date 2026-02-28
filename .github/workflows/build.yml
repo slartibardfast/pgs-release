@@ -1,0 +1,62 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake make libtool pkg-config gcc nasm \
+            libfontconfig1-dev libfreetype6-dev libfribidi-dev libharfbuzz-dev
+
+      - name: Setup JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Build libass (static)
+        run: |
+          cd libass
+          ./autogen.sh
+          ./configure --disable-shared --enable-static --prefix=$PWD/install
+          make -j$(nproc)
+          make install
+
+      - name: Build libpgs-jni
+        run: |
+          gcc -fPIC -shared -std=c99 -Wall -O2 \
+            -I libpgs-jni \
+            -I libass/install/include/ass \
+            -I $JAVA_HOME/include \
+            -I $JAVA_HOME/include/linux \
+            libpgs-jni/name_connolly_david_pgs_Render.c \
+            -L libass/install/lib -Wl,-Bstatic -lass -Wl,-Bdynamic \
+            -lm \
+            -o punkgraphicstream/libpgs-jni.so
+
+      - name: Build Java app
+        run: |
+          cd punkgraphicstream
+          mvn package -B
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pgs-linux-x86_64
+          path: |
+            punkgraphicstream/target/pgs-*.jar
+            punkgraphicstream/libpgs-jni.so
