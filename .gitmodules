@@ -7,3 +7,6 @@
 [submodule "libass"]
 	path = libass
 	url = https://github.com/libass/libass.git
+[submodule "ffmpeg"]
+	path = ffmpeg
+	url = https://github.com/slartibardfast/FFmpeg.git
