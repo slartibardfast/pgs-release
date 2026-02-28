@@ -45,6 +45,7 @@ jobs:
             -I $JAVA_HOME/include/linux \
             libpgs-jni/name_connolly_david_pgs_Render.c \
             -L libass/install/lib -Wl,-Bstatic -lass -Wl,-Bdynamic \
+            $(pkg-config --libs freetype2 fontconfig fribidi harfbuzz) \
             -lm \
             -o punkgraphicstream/libpgs-jni.so
 
