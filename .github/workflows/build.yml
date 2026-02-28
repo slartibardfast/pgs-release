@@ -32,7 +32,7 @@ jobs:
         run: |
           cd libass
           ./autogen.sh
-          ./configure --disable-shared --enable-static --prefix=$PWD/install
+          ./configure --disable-shared --enable-static --with-pic --prefix=$PWD/install
           make -j$(nproc)
           make install
 
