@@ -53,6 +53,19 @@ jobs:
           cd punkgraphicstream
           mvn package -B
 
+      - name: Acceptance test - encode ASS to SUP
+        run: |
+          cd punkgraphicstream
+          java -Djava.library.path=. \
+            -cp target/pgs-*.jar \
+            name.connolly.david.pgs.console.PunkGraphicStream \
+            src/test/resources/test.ass film hd_1080
+
+      - name: Acceptance test - verify SUP with ffprobe
+        run: |
+          ffprobe -v error -show_streams punkgraphicstream/src/test/resources/test.sup \
+            | grep codec_name=hdmv_pgs_subtitle
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
