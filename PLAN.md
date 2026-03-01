@@ -58,10 +58,10 @@ AVSubtitleRect (SUBTITLE_ASS or SUBTITLE_TEXT)
   │
   ▼ fftools/ffmpeg_enc.c detects type mismatch
   │
-  ├─ ff_subtitle_render_text()               ← libavfilter (libass)
+  ├─ avfilter_subtitle_render_frame()         ← libavfilter (libass)
   │   └─ rasterize → composite → crop → RGBA buffer
   ├─ av_quantize_generate_palette()          ← libavutil
-  ├─ av_palette_apply(dither=...)            ← libavutil
+  ├─ av_quantize_apply()                     ← libavutil
   └─ rewrite rect: type=BITMAP, data[0]=indices, data[1]=palette
   │
   ▼ AVSubtitleRect (type=SUBTITLE_BITMAP)
@@ -103,11 +103,22 @@ Architecture:
 - Orchestration in fftools (same pattern as sub2video)
 - Encoders unchanged — still accept SUBTITLE_BITMAP only
 
-I avoided libavcodec for the rendering because libavcodec
-cannot depend on libavfilter, and libass naturally belongs
-in libavfilter. I avoided building subtitle filter infrastructure
-(buffersrc/sink, AVFrame subtitle support) as that overlaps
-with the ongoing subtitle filtering discussion.
+The rendering lives in libavfilter because libavcodec cannot
+depend on libass (Coza's 2022 series was rejected for this).
+The API is public (avfilter_subtitle_render_*) because ff_
+symbols are invisible to fftools in shared builds.
+
+I deliberately avoided building subtitle filter infrastructure
+(buffersrc/sink, AVFrame subtitle support). The subtitle
+filtering discussion has fundamental unresolved design
+questions (sparse/overlapping event timing vs contiguous
+frame scheduling). Our utility function approach is orthogonal
+— it works with existing AVSubtitle, requires no AVFrame
+changes, and can serve as a building block for a future
+text2graphicsub filter if that infrastructure lands.
+
+The implementation is 2 patches, ~500 lines. Each phase in
+the series is independently useful and independently testable.
 
 Code at [repo URL]. Tested with roundtrip encode/decode.
 ```
@@ -299,34 +310,103 @@ Adapted for FFmpeg: Copyright (c) 2026 David Connolly
 
 18 text decoders (all produce `SUBTITLE_ASS`) × 4 bitmap encoders
 (all require `SUBTITLE_BITMAP`) = 72 pairs that fail at runtime.
+Tracked as ticket #3819.
 
-### Architecture: render in libavfilter, quantize in libavutil, orchestrate in fftools
+### Prior art
 
-**Why not libavcodec?** Coza's 2022 series was rejected for putting libass
-in libavcodec. libavcodec cannot depend on libavfilter (dependency violation).
+Three prior attempts inform our design:
 
-**Why not libavfilter subtitle filter?** Infrastructure doesn't exist —
-`fftools/ffmpeg_filter.c:1170` hard-rejects non-video/audio filters,
-`buffersrc.c` returns `AVERROR_BUG` for subtitles, `AVFrame` has no
-subtitle support. Building this overlaps with softworkz's 4-year-stuck work.
+**1. Clement Boesch's AVFrame subtitle WIP (Nov 2016)**
+Proposed putting subtitles into AVFrame via `extended_data` pointers.
+wm4 raised concerns about memory management, ABI stability, and display
+time semantics. Never completed. Established the idea but exposed the
+fundamental mismatch: subtitle events are sparse and overlapping, unlike
+contiguous audio/video frames.
+
+**2. Coza's text-to-bitmap series (May 2022, 12 patches, rejected)**
+Put libass rendering directly in libavcodec. Paul B Mahol: "this needs to
+be in libavfilter instead of libavcodec." Rejection was clear: libavcodec
+is the wrong place for libass.
+
+**3. softworkz's subtitle filtering (Sep 2021–Jun 2025, 25 patches, 9+ versions, unmerged)**
+Full subtitle filter infrastructure: AVFrame subtitle fields, frame-based
+codec API, sbuffersrc/sbuffersink, ~15 subtitle filters. Includes
+`text2graphicsub` which does exactly what Phase 3 does — as a filter node.
+
+Why it hasn't merged after 4+ years:
+- The timing problem: subtitle events are sparse (gaps) and non-exclusive
+  (overlapping). softworkz solved with dual timing fields on AVFrame.
+  Hendrik Leppkes, Anton Khirnov, and Lynne objected to the API design.
+- Series size: 25 patches touching 89 files.
+- softworkz offered $1,000 bounty for alternative without dual timing.
+  No taker as of Jun 2025. Status: deadlocked.
+
+### Architecture: utility function, not subtitle filters
+
+Our approach sidesteps the subtitle filtering debate:
+- **No AVFrame changes.** We work with existing `AVSubtitle`/`AVSubtitleRect`.
+- **No filter graph involvement.** Same pattern as sub2video (~200 lines in
+  `ffmpeg_filter.c` that convert bitmap subtitles to video frames entirely
+  in fftools, without formal filter infrastructure).
+- **No opinion on the timing debate.** No subtitle frame scheduling needed.
+- **Compatible with future subtitle filters.** Our rendering utility becomes
+  a building block for a future `text2graphicsub` filter if one lands.
+
+**Why not libavcodec?** Coza's 2022 rejection. libavcodec→libass is a
+dependency violation.
+
+**Why public API (`avfilter_subtitle_render_*`)?** `ff_` symbols are invisible
+to fftools in shared builds. fftools must call the renderer. Requires version
+bump + APIchanges.
 
 ### Rendering utility (`libavfilter/subtitle_render.{h,c}`)
 
+Public API, CONFIG_LIBASS gated (stubs return AVERROR(ENOSYS) without libass):
+
 ```c
-int ff_subtitle_render_text(const char *header,
-                            const char *text,
-                            int64_t pts_ms,
-                            int canvas_w, int canvas_h,
-                            uint8_t **rgba,
-                            int *x, int *y, int *w, int *h);
+AVSubtitleRenderContext *avfilter_subtitle_render_alloc(int canvas_w,
+                                                        int canvas_h);
+void avfilter_subtitle_render_freep(AVSubtitleRenderContext **ctx);
+int avfilter_subtitle_render_set_header(AVSubtitleRenderContext *ctx,
+                                         const char *header);
+int avfilter_subtitle_render_add_font(AVSubtitleRenderContext *ctx,
+                                       const char *name,
+                                       const uint8_t *data, int size);
+int avfilter_subtitle_render_frame(AVSubtitleRenderContext *ctx,
+                                    const char *text,
+                                    int64_t start_ms, int64_t duration_ms,
+                                    uint8_t **rgba, int *linesize,
+                                    int *x, int *y, int *w, int *h);
 ```
 
-### Clip-box splitting (top/bottom subtitle support)
+Rendering flow: ASS event → `ass_process_chunk()` → `ass_render_frame()` →
+`ASS_Image` linked list → composite alpha masks onto transparent RGBA canvas →
+crop bounding box → return RGBA + position. Caller (fftools) quantizes to
+palette using `av_quantize_*`.
 
-PGS supports up to 2 non-overlapping windows. The orchestrator in
-fftools must split rendered RGBA into 1-2 non-overlapping rects
-(analogous to PunkGraphicStream's `SubtitleEvent.walkClips()`).
-The PGS encoder validates non-overlap via AABB intersection test.
+### Orchestration (`fftools/ffmpeg_enc.c`)
+
+In `do_subtitle_out()`, detect text→bitmap mismatch before encoding:
+1. Lazy-init renderer (canvas_size, ASS header, font attachments)
+2. Render each text rect → RGBA
+3. Quantize RGBA → palette + indices via `av_quantize_*`
+4. Rewrite rect: type=BITMAP, data[0]=indices, data[1]=palette
+5. Continue to `avcodec_encode_subtitle()`
+
+Relax text→bitmap gate in `fftools/ffmpeg_mux_init.c` (probe-and-free pattern
+to detect libass availability at runtime without preprocessor conditionals).
+
+### Clip-box splitting (follow-up optimization)
+
+PGS supports up to 2 non-overlapping windows. Single rect works correctly
+for initial implementation. Multi-rect splitting (top/bottom subtitle support)
+deferred as follow-up, analogous to PunkGraphicStream's `walkClips()`.
+
+### FATE testing
+
+Font rendering is platform-dependent (FreeType version, fontconfig).
+Structural roundtrip test: text → PGS encode → verify valid output
+(packet count, timing). Not pixel-exact CRC. Gated on CONFIG_LIBASS.
 
 ### Usage (after Phase 3)
 
