@@ -1,10 +1,10 @@
 # Phase 3: Text-to-Bitmap Subtitle Conversion
 
-## Status: DONE (core), IN PROGRESS (rect splitting + animation)
+## Status: DONE (core), IN PROGRESS (rect splitting + fade animation)
 
 Core text-to-bitmap committed as `0b803170ab` (renderer) + `9c953175c6`
 (fftools orchestration). Rect splitting implemented but uncommitted.
-Animation support requires Phase 3a (encoder composition states done in Phase 1).
+Fade animation (Phase 3a) in progress — encoder composition states done in Phase 1.
 
 ## Context
 
@@ -506,6 +506,116 @@ Animation requires these Phase 1 encoder changes (detailed in PHASE1.md):
 - Object version tracking and reuse
 - DTS computation from decoder model
 - Acquisition Point generation
+
+## Phase 3a: Fade Animation Implementation
+
+### Status: IN PROGRESS
+
+### Approach
+
+Strip `\fad(in,out)` from ASS text before rendering so libass produces a
+full-opacity bitmap. Quantize once to get a base palette + indices. For each
+fade step, scale palette alpha and call the encoder. The encoder's composition
+state machine (Phase 1) automatically emits Epoch Start for the first call and
+Normal+palette_update for subsequent calls — no encoder changes needed.
+
+### Utility Functions (`fftools/ffmpeg_subtitle_fade.c`)
+
+Extracted to a separate file for testability via FFmpeg's `.c` inclusion
+pattern (same as `libavutil/tests/parseutils.c` including `parseutils.c`).
+All functions are `static` — private in production, accessible to tests
+via `#include`.
+
+```c
+// Strip \fad(in,out) from ASS text, return durations
+static void parse_and_strip_fad(char *ass_text,
+                                 int *fade_in_ms, int *fade_out_ms);
+
+// Scale palette alpha by percentage (0-100)
+static void scale_palette_alpha(const uint32_t *src, uint32_t *dst,
+                                int nb_colors, int alpha_pct);
+
+// Frame-rate-aware step count computation
+static int compute_fade_steps(int fade_in_ms, int fade_out_ms,
+                               int duration_ms, AVRational framerate,
+                               int *in_steps, int *out_steps);
+```
+
+### Step Count: Frame-Rate Aware, No Artificial Cap
+
+Step interval derived from `enc_ctx->framerate`, NOT hardcoded:
+- `frame_ms = 1000 * framerate.den / framerate.num`
+- Falls back to 24fps if framerate unset
+- One palette update per video frame for smooth animation
+- Minimum 2 steps per fade region
+
+No artificial cap on step count. `palette_version` is a byte (0-255) — the
+"8 palettes per epoch" spec limit refers to palette **ID slots** (0-7), not
+version increments. We use a single palette ID (0), so 255 versions are
+available. This matches SUPer's approach.
+
+| Rate | Frame interval | 300ms fade | 1000ms fade |
+|------|---------------|------------|-------------|
+| 23.976 | 41.7ms | 7 steps | 24 steps |
+| 25.000 | 40.0ms | 7 steps | 25 steps |
+| 29.970 | 33.4ms | 9 steps | 30 steps |
+| 59.940 | 16.7ms | 18 steps | 60 steps |
+
+Safety clamp at 254 total steps (Epoch Start uses version 0). Only triggers
+for extreme cases like 10+ second fades at 60fps.
+
+### Fade Timing Model
+
+```
+\fad(300,500) on event 1.0s → 4.0s (24fps):
+
+1.000s  Epoch Start: alpha=0%     ← loads ODS invisibly
+1.042s  Normal PDS:  alpha=14%
+1.083s  Normal PDS:  alpha=29%
+  ...
+1.292s  Normal PDS:  alpha=100%   ← peak
+        ... peak period, no packets ...
+3.500s  Normal PDS:  alpha=83%
+  ...
+3.958s  Normal PDS:  alpha=8%
+4.000s  Clear (num_rects=0)       ← removes from decoder
+```
+
+- **Fade-in** starts at alpha=0% (Epoch Start must load ODS before palette updates)
+- **Fade-out** ends at the fade boundary, NOT at alpha=0%. Clear packet handles removal.
+- **Clear packet** already emitted by existing subtitle pipeline. No change needed.
+
+### Rect Splitting Interaction
+
+Skip rect splitting when fade detected. Two independently-quantized rects have
+separate palettes — a single PDS update can't fade both. Animated events are
+always single-rect.
+
+### Scope
+
+- `\fad(in,out)` only (2-argument). Covers vast majority of ASS files.
+- No `\fade(...)` (7-argument), `\move`, `\t(\alpha)`. Future work.
+- No encoder changes. No subtitle_render API changes.
+
+### FATE Tests
+
+1. **Encoder state machine** (`tests/api/api-pgs-fade-test.c`): construct
+   AVSubtitle structs, call encoder with different palettes/positions/clears,
+   verify composition_state, palette_update_flag, palette_version in output.
+2. **`\fad` parsing** (`tests/fate/pgs-fade-test.c`): edge cases via `.c`
+   inclusion of `ffmpeg_subtitle_fade.c`.
+3. **Step computation** (same test file): frame rate variants, clamping, minimums.
+
+### Files
+
+| File | Change |
+|------|--------|
+| `fftools/ffmpeg_subtitle_fade.c` | NEW — utility functions |
+| `fftools/ffmpeg_enc.c` | `#include` fade utils, animation loop, wiring |
+| `tests/api/api-pgs-fade-test.c` | NEW — encoder state machine test |
+| `tests/fate/pgs-fade-test.c` | NEW — fade utility unit tests |
+| `tests/api/Makefile` | Add api-pgs-fade-test |
+| `tests/fate/subtitles.mak` | Add FATE targets |
 
 ## Dependencies
 
