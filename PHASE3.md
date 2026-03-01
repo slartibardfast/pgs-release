@@ -1,5 +1,11 @@
 # Phase 3: Text-to-Bitmap Subtitle Conversion
 
+## Status: DONE (core), IN PROGRESS (rect splitting + animation)
+
+Core text-to-bitmap committed as `0b803170ab` (renderer) + `9c953175c6`
+(fftools orchestration). Rect splitting implemented but uncommitted.
+Animation support requires Phase 3a (encoder composition states done in Phase 1).
+
 ## Context
 
 FFmpeg has no way to convert text subtitles (SRT, ASS, WebVTT, etc.) to bitmap
@@ -394,6 +400,113 @@ FATE_SAMPLES=/tmp/fate-samples make fate-filter-sub2video
 | `libavcodec/avcodec.h` | **Reference** — AVSubtitleRect struct |
 | `fftools/ffmpeg_filter.c` | **Reference** — sub2video_copy_rect pattern |
 
+## Rect Splitting (in progress)
+
+### Problem
+
+When a rendered bitmap contains text at both top and bottom of the screen
+(e.g., dialogue at bottom + song lyrics at top, or an ASS event with
+`\an8` and `\an2` positioning), the single RGBA bitmap includes a large
+transparent gap in the middle. Encoding this as one object wastes
+bandwidth on transparent pixels and RLE-encodes empty rows.
+
+PGS supports up to 2 non-overlapping composition objects per display set.
+Splitting the bitmap at a transparent gap produces two smaller objects,
+each with its own window, position, and independently quantized palette.
+
+### Algorithm
+
+In `convert_text_to_bitmap()` (fftools/ffmpeg_enc.c):
+
+1. After rendering RGBA, scan rows for a fully-transparent horizontal gap
+2. If gap exceeds threshold (32 rows default), split into top and bottom
+3. Each half is independently quantized (separate `av_quantize_*` calls)
+4. The original rect is rewritten as top; a second rect is allocated for bottom
+5. The PGS encoder handles 2 rects natively (already supported)
+
+### Implementation
+
+Three functions added to `fftools/ffmpeg_enc.c`:
+- `quantize_rgba_to_rect()` — extracted helper for RGBA → palette + indices
+- `find_transparent_gap()` — scan for horizontal gap in RGBA data
+- Updated `convert_text_to_bitmap()` — split logic when gap found
+
+Status: implemented, builds, uncommitted. Needs FATE test coverage.
+
+## Animation Support (requires Phase 1 amendment)
+
+### Problem
+
+ASS subtitle effects like `\fad` (fade), `\t(\alpha)` (alpha transition),
+and `\move` (position animation) currently produce a single static bitmap
+per event. The PGS spec supports animation effects through:
+
+- **Palette animation**: One bitmap (ODS) + chain of palette updates (PDS)
+  with modified alpha/color values (NORMAL composition, palette_update_flag)
+- **Position animation**: One bitmap (ODS) + chain of PCS coordinate
+  updates (NORMAL composition, no ODS retransmission)
+
+These techniques are specified in:
+- US20090185789A1 (Panasonic) — composition states, palette_update_flag
+- US8638861B2 (Sony) — segment timing, PDS versioning
+- US7620297B2 (Panasonic) — decoder model, object buffer persistence
+
+### Approach
+
+Animation is a two-layer problem:
+
+**Layer 1: Encoder state machine (Phase 1 amendment)**
+The PGS encoder must support composition states beyond Epoch Start:
+- NORMAL Display Sets with palette_update_flag for PDS-only updates
+- NORMAL Display Sets referencing previously-decoded objects
+- Acquisition Point Display Sets for seek support
+- Decoder model timing (DTS computation from buffer model)
+- See PHASE1.md "Amendment Plan" section for full details.
+
+**Layer 2: Animation-aware conversion (Phase 3 extension)**
+The text-to-bitmap layer detects animation in ASS events and produces
+multiple Display Sets per event:
+
+1. **Fade detection**: Parse `\fad(in,out)` from ASS override tags
+2. **Render base frame**: Full RGBA at peak visibility
+3. **Generate palette variants**: Same bitmap indices, different alpha
+   values in palette entries for each fade step
+4. **Emit Display Sets**: Epoch Start (full ODS + PDS), then NORMAL
+   (PDS-only) at each animation step
+
+The animation-aware conversion runs in `fftools/ffmpeg_enc.c` and calls
+the PGS encoder multiple times per ASS event (once for the base frame
+as Epoch Start, then once per animation step as Normal).
+
+### Decoder model budgeting
+
+Per the HDMV spec, a palette-only Display Set (PCS + PDS + END) is
+small (~1300 bytes for 256-entry palette) and transfers quickly. At
+Rx = 2 MB/s, a full palette update takes ~0.65 ms to arrive. This
+allows high-frequency palette animation (60+ steps/second) without
+exceeding buffer constraints.
+
+Position animation requires PCS + WDS + END (~30-50 bytes), even smaller.
+
+The main constraint is the initial ODS transfer. For a 1920×200 subtitle
+bitmap (~380 KB decoded, ~20-50 KB RLE), the object decode time is:
+```
+⌈200 × 1920 × 90000 / 16000000⌉ ≈ 2160 ticks ≈ 24 ms
+```
+
+This must complete before the first PCS PTS, setting the minimum lead
+time for the Epoch Start Display Set.
+
+### Dependencies on Phase 1
+
+Animation requires these Phase 1 encoder changes (detailed in PHASE1.md):
+- Composition state field (currently hardcoded to 0x80)
+- palette_update_flag support
+- palette_version incrementing
+- Object version tracking and reuse
+- DTS computation from decoder model
+- Acquisition Point generation
+
 ## Dependencies
 
 Our existing work consumed by this phase:
@@ -401,3 +514,13 @@ Our existing work consumed by this phase:
 - `ff_palette_map_*` (Phase 2b) — available but not needed directly
   (quantizer's `av_quantize_apply()` handles the index mapping)
 - PGS encoder (Phase 1) — primary test target for the pipeline
+
+## References
+
+- US20090185789A1 (Panasonic) — Composition states, palette_update_flag
+- US8638861B2 (Sony) — PDS versioning, segment timing constraints
+- US7620297B2 (Panasonic) — Decoder model, object buffer persistence
+- `docs/pgs-specification.md` — Compiled spec with decoder model constants
+- SUPer encoder — Hardware-validated reference for palette animation
+  sequences and decoder model compliance (cited for spec interpretation,
+  not code patterns)

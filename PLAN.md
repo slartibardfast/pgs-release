@@ -75,15 +75,30 @@ Tests are included in the same patch as the code they test (supporting evidence,
 
 ```
 Phase 0:  RFC email
-Phase 1:  [PATCH 1/1] PGS encoder + FATE test          ← DONE (6c96a661fd)
-Phase 2a: [PATCH 1/2] OkLab move + Quantizer API        ← DONE (118a2b9b2c, 30dd94d8e0)
-Phase 2b: [PATCH 1/2] Palette mapping extraction         ← DONE (246b8f30f7, 2d1cbaadd8)
-Phase 3:  [PATCH 1/2] Text-to-bitmap conversion + tests  ← unlocks 72 pairs
-Phase 4:  [PATCH 1/1] DVD subtitle consolidation         ← first consumer of shared API
-Phase 5:  [PATCH 1/4] Median Cut + ELBG + GIF cleanup    ← complete unification
+Phase 1:  [PATCH 1/1] PGS encoder + composition states    ← DONE (2cc882f669), includes state machine
+Phase 2a: [PATCH 1/2] OkLab move + Quantizer API          ← DONE (8e60ec654f, 8d7abb5328)
+Phase 2b: [PATCH 1/2] Palette mapping extraction           ← DONE (3326aa9602, 557d01153a)
+Phase 3:  [PATCH 1/2] Text-to-bitmap + rect splitting     ← DONE (0b803170ab, 9c953175c6), AMEND PENDING
+Phase 3a: [PATCH 1/1] Text-to-bitmap: animation pipeline  ← palette animation, fade detection
+Phase 4:  [PATCH 1/1] DVD subtitle consolidation           ← first consumer of shared API
+Phase 5:  [PATCH 1/4] Median Cut + ELBG + GIF cleanup      ← complete unification
 ```
 
-Total: 14 patches across 6 submissions. Each phase is independent.
+Total: ~16 patches across 7 submissions. Each phase is independent.
+
+### Phase dependency for animation
+
+Animation support spans Phase 1 (encoder state machine, now done) and
+Phase 3a (animation-aware conversion). Phase 3a calls the encoder with
+palette-only Normal Display Sets to produce fade effects.
+
+```
+Phase 1 (encoder + composition states) ← DONE
+                        │
+Phase 3 (text-to-bitmap)  ──→ Phase 3a (fade detection, palette animation)
+```
+
+Phases 2a, 2b, 4, 5 are unaffected by animation work.
 
 ### Phase 0: RFC email (before any patches)
 
@@ -123,19 +138,24 @@ the series is independently useful and independently testable.
 Code at [repo URL]. Tested with roundtrip encode/decode.
 ```
 
-### Phase 1: PGS encoder — DONE
+### Phase 1: PGS encoder — DONE, amendment pending
 
 ```
 [PATCH 1/1] lavc/pgssubenc: add HDMV PGS subtitle encoder
 ```
 
-Includes encoder, FATE test, reference CRC. Committed `6c96a661fd`.
+Includes encoder, FATE test, reference CRC. Committed `2cc882f669`.
+
+Composition state machine included: automatic state detection (Epoch Start,
+Normal, Acquisition Point), palette_update_flag, palette_version tracking.
+See PHASE1.md for design details grounded in patents US20090185789A1,
+US8638861B2, and US7620297B2.
 
 ### Phase 2a: Quantizer API + NeuQuant — DONE
 
 ```
-[PATCH 1/2] lavu: move OkLab palette utilities from libavfilter  (118a2b9b2c)
-[PATCH 2/2] lavu: add color quantization API with NeuQuant       (30dd94d8e0)
+[PATCH 1/2] lavu: move OkLab palette utilities from libavfilter  (8e60ec654f)
+[PATCH 2/2] lavu: add color quantization API with NeuQuant       (8d7abb5328)
 ```
 
 Patch 1 is a pure refactor (palette.{h,c} move, include updates, no functional change).
@@ -145,8 +165,8 @@ version bump (MINOR 25→26), and APIchanges — one logical unit with its test.
 ### Phase 2b: Palette mapping extraction — DONE
 
 ```
-[PATCH 1/2] lavu: extract palette mapping and dithering from vf_paletteuse  (246b8f30f7)
-[PATCH 2/2] lavfi/vf_paletteuse: use libavutil palette mapping              (2d1cbaadd8)
+[PATCH 1/2] lavu: extract palette mapping and dithering from vf_paletteuse  (3326aa9602)
+[PATCH 2/2] lavfi/vf_paletteuse: use libavutil palette mapping              (557d01153a)
 ```
 
 Patch 1 creates palettemap.{h,c} with KD-tree colormap, hash cache, and 9 dithering
@@ -155,16 +175,26 @@ FFColorInfo etc. noted as future work.
 Patch 2 removes ~570 lines from vf_paletteuse.c, replacing with ff_palette_map_*() calls.
 All 4 paletteuse FATE tests produce bit-for-bit identical output.
 
-### Phase 3: Universal text-to-bitmap (after Phase 2 + RFC consensus)
+### Phase 3: Universal text-to-bitmap — DONE, amendment pending
 
 Rendering in libavfilter, orchestration in fftools. Requires `--enable-libass`.
 
 ```
-[PATCH 1/2] lavfi: add text subtitle rendering utility (via libass)
-[PATCH 2/2] fftools: auto-convert text subtitles to bitmap for encoding
+[PATCH 1/2] lavfi: add text subtitle rendering utility (via libass)   (0b803170ab)
+[PATCH 2/2] fftools: auto-convert text subtitles to bitmap for encoding (9c953175c6)
 ```
 
-Patch 2 includes FATE roundtrip tests.
+Unlocks 72 text→bitmap subtitle conversion pairs (e.g. SRT→PGS, ASS→DVB).
+FATE tests pending (font rendering is platform-dependent; structural test needed).
+
+**Rect splitting (uncommitted):** Scan rendered RGBA for transparent gaps,
+split into 2 composition objects when gap > 32 rows. Implemented in
+`convert_text_to_bitmap()`, needs FATE coverage.
+
+**Amendment (Phase 3a):** Animation-aware conversion — detect `\fad`,
+`\t(\alpha)`, `\move` in ASS events, render base frame + palette variants,
+emit multiple Display Sets per event. Encoder composition states (Phase 1) done.
+See PHASE3.md for full details.
 
 ### Phase 4: DVD subtitle consolidation (after Phase 2)
 
@@ -210,7 +240,7 @@ Public API required: Phases 3, 4, 5 all call `av_quantize_*` cross-library.
 
 ## Phase 1 Detail: PGS Encoder
 
-**DONE — committed `6c96a661fd`.**
+**DONE — committed `2cc882f669`.**
 
 Implemented in `ffmpeg/libavcodec/pgssubenc.c`:
 - PGS RLE encoding per HDMV spec, ODS fragmentation for >64KB
@@ -396,25 +426,70 @@ In `do_subtitle_out()`, detect text→bitmap mismatch before encoding:
 Relax text→bitmap gate in `fftools/ffmpeg_mux_init.c` (probe-and-free pattern
 to detect libass availability at runtime without preprocessor conditionals).
 
-### Clip-box splitting (follow-up optimization)
+### Clip-box splitting (top/bottom composition objects)
 
-PGS supports up to 2 non-overlapping windows. Single rect works correctly
-for initial implementation. Multi-rect splitting (top/bottom subtitle support)
-deferred as follow-up, analogous to PunkGraphicStream's `walkClips()`.
+PGS supports up to 2 non-overlapping composition objects per display set.
+When a rendered bitmap contains a horizontal transparent gap (e.g. text
+at top and bottom of screen), the conversion splits it into 2 rects,
+each independently quantized. This avoids wasting bandwidth on transparent
+pixels spanning the gap.
+
+Algorithm: scan rows of rendered RGBA for fully-transparent runs. If a
+gap exceeds a threshold, split into top and bottom rects. Realloc the
+subtitle's rects array and create a second AVSubtitleRect. Analogous to
+PunkGraphicStream's `walkClips()` approach.
+
+### Animation pipeline (Phase 3a)
+
+Palette animation and position animation are core to the text-to-bitmap
+layer — they determine output quality for common ASS effects. The encoder
+composition state machine (Phase 1, done) provides the foundation —
+Phase 3a builds the animation-aware conversion layer on top.
+
+**Encoder support (done in Phase 1):**
+- Composition states: Epoch Start / Acquisition Point / Normal
+- palette_update_flag: emit PDS-only Display Sets (no WDS or ODS)
+- palette_version: increment within epoch
+- See PHASE1.md for encoder specification
+
+**Phase 3a — Animation-aware text-to-bitmap:**
+- Detect `\fad(in,out)` in ASS override tags
+- Render base RGBA at peak visibility, quantize once
+- Generate palette variants (same indices, modified alpha per step)
+- Emit Epoch Start + N Normal (PDS-only) Display Sets per event
+- Detect `\move` for position animation (PCS coordinate updates)
+- Budget animation steps against decoder model constraints
+- See PHASE3.md for full animation pipeline specification
+
+**Decoder model constants (from patents, validated by hardware testing):**
+
+| Constant | Value | Source |
+|----------|-------|--------|
+| Rx | 2 MB/s (16 Mbps) | US7620297B2 |
+| Rd | 16 MB/s (128 Mbps) | US7620297B2 |
+| Rc | 32 MB/s (256 Mbps) | US7620297B2 |
+| Coded Data Buffer | 1 MB | US8638861B2 |
+| Decoded Object Buffer | 4 MB | US8638861B2 |
+| Max objects/epoch | 64 | US8638861B2 |
+| Max palettes/epoch | 8 | US8638861B2 |
+
+A palette-only Display Set (~1300 bytes) takes <0.65 ms at Rx = 2 MB/s,
+enabling 60+ palette updates/second without buffer overflow. This is the
+foundation for smooth fade animation.
 
 ### FATE testing
 
 Font rendering is platform-dependent (FreeType version, fontconfig).
-Structural roundtrip test: text → PGS encode → verify valid output
-(packet count, timing). Not pixel-exact CRC. Gated on CONFIG_LIBASS.
+Structural unit test validates render API and rect splitting. Integration
+test verifies SRT→PGS pipeline produces valid output. Gated on CONFIG_LIBASS.
 
-### Usage (after Phase 3)
+### Usage
 
 ```bash
-ffmpeg -i input.srt -c:s pgssub -canvas_size 1920x1080 output.sup
-ffmpeg -i input.ass -c:s dvbsub output.ts
-ffmpeg -i input.webvtt -c:s dvdsub output.sub
-ffmpeg -i movie.mkv -map 0:s -c:s pgssub output.sup
+ffmpeg -i input.srt -c:s pgssub -s 1920x1080 output.sup
+ffmpeg -i input.ass -c:s pgssub -s 1920x1080 output.sup
+ffmpeg -i input.webvtt -c:s dvbsub output.ts
+ffmpeg -i movie.mkv -map 0:s -c:s pgssub -s 1920x1080 output.sup
 ```
 
 ---
@@ -490,29 +565,37 @@ Upgrades to OkLab perceptual distance, adds dithering (critical at 4 colors).
 
 ## Implementation Order
 
-### Phase 1: DONE
-Committed `6c96a661fd` in ffmpeg submodule.
+### Phase 1: DONE (encoder + composition state machine)
+Committed `2cc882f669` in ffmpeg submodule. Includes composition state
+machine, palette_update_flag, palette_version tracking, and Acquisition
+Point support.
 
 ### Phase 2a: DONE
-Committed `118a2b9b2c` (palette move) and `30dd94d8e0` (quantizer API) in ffmpeg submodule.
+Committed `8e60ec654f` (palette move) and `8d7abb5328` (quantizer API) in ffmpeg submodule.
 
-### Phase 2b: Palette mapping extraction
-6. Extract `palettemap.c` from `vf_paletteuse.c`
-7. Refactor `vf_paletteuse.c` to call `av_palette_apply()`
-8. Verify `make fate` (no behavior change)
+### Phase 2b: DONE
+Committed `3326aa9602` (extract) and `557d01153a` (refactor filter).
 
-### Phase 3: Text-to-bitmap
-9. Create `libavfilter/subtitle_render.{h,c}`
-10. Add orchestration in `fftools/ffmpeg_enc.c` + FATE tests
-11. Verify `make fate`
+### Phase 3: DONE (core text-to-bitmap)
+Committed `0b803170ab` (render utility) and `9c953175c6` (fftools orchestration).
+Rect splitting implemented, uncommitted.
+
+### Phase 3a: Animation-aware conversion (NEXT)
+1. Parse `\fad` from ASS override tags in fftools
+2. Render base frame at peak visibility
+3. Generate palette variants (alpha-modified copies)
+4. Emit Epoch Start + N Normal (PDS-only) Display Sets
+5. Detect `\move` for position animation
+6. Budget animation steps against decoder model
+7. FATE test: SRT with fade → PGS, verify multiple Display Sets
 
 ### Phase 4: DVD subtitle consolidation
-12. Replace dvdsubenc.c with shared API calls
-13. Verify `make fate`
+8. Replace dvdsubenc.c with shared API calls
+9. Verify `make fate`
 
 ### Phase 5: Algorithm integration + GIF
-14. Add Median Cut + ELBG algorithms, refactor palettegen + elbg + gif
-15. Verify `make fate`
+10. Add Median Cut + ELBG algorithms, refactor palettegen + elbg + gif
+11. Verify `make fate`
 
 ## Verification
 
@@ -520,14 +603,49 @@ Committed `118a2b9b2c` (palette move) and `30dd94d8e0` (quantizer API) in ffmpeg
 # Phase 1 (done)
 FATE_SAMPLES=/tmp/fate-samples make fate-sub-pgs
 
-# Phase 2
+# Phase 1 (encoder + composition states, done)
+FATE_SAMPLES=/tmp/fate-samples make fate-sub-pgs  # passes
+
+# Phase 2 (done)
 make -j$(nproc) && make fate  # no behavior change
 
 # Phase 3 (requires --enable-libass)
 ./configure --enable-libass --disable-doc && make -j$(nproc)
-./ffmpeg -i test.srt -c:s pgssub -canvas_size 1920x1080 /tmp/t2b.sup
+./ffmpeg -i test.srt -c:s pgssub -s 1920x1080 /tmp/t2b.sup
 ./ffprobe -v error -show_streams /tmp/t2b.sup | grep hdmv_pgs
+
+# Phase 3a (animation pipeline)
+./ffmpeg -i test_fade.ass -c:s pgssub -s 1920x1080 /tmp/fade.sup
+./ffprobe -v error -show_packets /tmp/fade.sup  # verify multiple display sets
 
 # Phase 4-5
 make -j$(nproc) && make fate  # all quantizers unified
 ```
+
+## Detailed Phase Documentation
+
+| Phase | Document | Status |
+|-------|----------|--------|
+| Phase 1 + 1a | [PHASE1.md](PHASE1.md) | Retrospective + amendment plan |
+| Phase 2a + 2b | [PHASE2.md](PHASE2.md) | Retrospective (complete) |
+| Phase 3 + 3a | [PHASE3.md](PHASE3.md) | Retrospective + animation plan |
+
+## References
+
+### Patents (specification basis)
+
+| Patent | Assignee | Covers |
+|--------|----------|--------|
+| US20090185789A1 | Panasonic | Stream shaping, decoder model, composition states |
+| US8638861B2 | Sony | Segment syntax, buffering model, timing constraints |
+| US7620297B2 | Panasonic | Decoder model, object buffer management, transfer rates |
+
+### Compiled specification
+
+- `docs/pgs-specification.md` — Synthesized from patents + reverse engineering
+
+### Reference implementations (cited for spec interpretation, not code)
+
+- FFmpeg `libavcodec/pgssubdec.c` — Reference decoder
+- SUPer — Hardware-validated PGS encoder (composition state transitions,
+  decoder model compliance, palette animation sequences)

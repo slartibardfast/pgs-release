@@ -353,34 +353,96 @@ The END segment marks the completion of a display set. Its segment size is 0.
 
 | Buffer | Size | Description |
 |--------|------|-------------|
-| Graphics Plane | ~2 MB (1920×1080×8 bits) | Final rendered output |
-| Object Buffer | 4–8 MB | Stores decoded RLE objects |
-| Composition Buffer | 8 PCS + 8 PDS | Active composition state |
-| Coded Data Buffer | Variable | Incoming PES packets |
-| CLUT | 256 × 4 bytes | Active color lookup table |
+| Coded Data Buffer | 1 MB (1,048,576 bytes) | Incoming PES packets before decoding |
+| Decoded Object Buffer | 4 MB (4,194,304 bytes) | Stores decoded (uncompressed) bitmap objects |
+| Graphics Plane | ~2 MB (1920×1080 bytes) | Final rendered output |
+| Composition Buffer | 8 PCS + 8 PDS | Active composition state metadata |
+| CLUT | 256 × 4 bytes (1024 bytes) | Active color lookup table |
 
 ### Transfer Rates
 
-| Rate | Value | Description |
-|------|-------|-------------|
-| Rc | 256,000,000 bytes/sec | Object Buffer → Graphics Plane |
-| Rd | 128 Mbps | Coded Data → Object Buffer (decode rate) |
+| Rate | Bytes/sec | Bits/sec | Path |
+|------|-----------|----------|------|
+| Rx | 2,000,000 | 16 Mbps | Stream → Coded Data Buffer |
+| Rd | 16,000,000 | 128 Mbps | Coded Data → Decoded Object Buffer |
+| Rc | 32,000,000 | 256 Mbps | Object Buffer → Graphics Plane |
+
+### Object Buffer Constraints
+
+- Maximum 64 object slots per epoch
+- Each slot consumes `width × height` bytes (1 byte per pixel, 8-bit indexed)
+- Slots persist for the entire epoch (dimensions fixed per object_id)
+- Same object_id with same dimensions can be overwritten after its PTS passes
+- Buffer is completely cleared on Epoch Start
 
 ### Timing Constraints
 
-```
-PTS(PCS) = DTS(PCS) + DECODE_DURATION
-DECODE_DURATION = clear_time + decode_time + write_time
+All timing values are in 90 kHz clock ticks. `FREQ = 90000`.
 
-clear_time = 90000 × (video_width × video_height) / 256000000
-write_time = 90000 × (window_size) / 256000000   [per window]
-
-PTS(ODS) = DTS(ODS) + ⌈90000 × SIZE(ODS) / Rd⌉
+**Epoch Start decode duration (full-screen clear):**
 ```
+DECODE_DURATION = ⌈FREQ × video_width × video_height / Rc⌉
+
+Example (1920×1080): ⌈90000 × 1920 × 1080 / 32000000⌉ = 5832 ticks ≈ 64.8 ms
+```
+
+**Non-Epoch-Start decode duration:**
+```
+DECODE_DURATION = max(window_clear_time, object_decode_time) + window_write_time
+
+window_clear_time  = Σ ⌈FREQ × w_height × w_width / Rc⌉   (per unassigned window)
+object_decode_time = Σ ⌈obj_width × obj_height × FREQ / Rd⌉ (per new object)
+window_write_time  = Σ ⌈w_height × w_width × FREQ / Rc⌉    (per assigned window)
+```
+
+**PCS timing:**
+```
+DTS(PCS) = PTS(PCS) - DECODE_DURATION
+```
+
+**ODS timing:**
+```
+DTS(first_ODS)  = DTS(PCS)
+PTS(first_ODS)  = DTS(PCS) + ⌈obj_width × obj_height × FREQ / Rd⌉
+DTS(next_ODS)   = PTS(previous_ODS)
+```
+
+**WDS timing:**
+```
+DTS(WDS) = DTS(PCS)
+PTS(WDS) = PTS(PCS) - wipe_duration
+```
+
+**PDS timing:** `PTS = DTS` (palette loads are instantaneous).
+
+**END timing:** `PTS = DTS = PTS(last_ODS)` (or `DTS(PCS)` if no ODS).
+
+### Timestamp Sanity Rules
+
+1. All segment PTS ≤ PCS PTS
+2. All segment DTS ≥ PCS DTS
+3. All segment PTS ≥ PCS DTS
+4. PTS ≥ DTS for every segment
+5. DTS values monotonically non-decreasing across segments in a display set
+6. Segment lifetime (PTS − DTS) < 1 second (90000 ticks)
+7. Epoch Start DTS must be after previous epoch's last display set PTS
+8. Between display sets with WDS: PTS gap must exceed window write duration
+
+### Coded Data Buffer (Leaky Bucket Model)
+
+The Coded Data Buffer fills at rate Rx between segments and drains by
+the segment payload size when each segment is consumed:
+
+```
+fill = min(used + round(Δticks × Rx / FREQ), BUFFER_SIZE) - segment_size
+```
+
+If fill < 0 (underflow), the stream is non-compliant. The encoder must
+schedule segment timing to prevent coded buffer underflow.
 
 ### Maximum Stream Bitrate
 
-- Recommended range: 500–16000 kbps for compliant streams
+- Effective limit determined by Rx = 16 Mbps (2 MB/s)
 - The largest object in an epoch determines the decoding delay
 - Events may need to be dropped to maintain compliant bitrate
 
