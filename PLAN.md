@@ -76,8 +76,8 @@ Tests are included in the same patch as the code they test (supporting evidence,
 ```
 Phase 0:  RFC email
 Phase 1:  [PATCH 1/1] PGS encoder + FATE test          ← DONE (6c96a661fd)
-Phase 2a: [PATCH 1/2] Quantizer API + NeuQuant + test   ← new code, zero risk
-Phase 2b: [PATCH 1/2] Palette mapping extraction         ← refactoring, after 2a proven
+Phase 2a: [PATCH 1/2] OkLab move + Quantizer API        ← DONE (118a2b9b2c, 30dd94d8e0)
+Phase 2b: [PATCH 1/2] Palette mapping extraction         ← DONE (246b8f30f7, 2d1cbaadd8)
 Phase 3:  [PATCH 1/2] Text-to-bitmap conversion + tests  ← unlocks 72 pairs
 Phase 4:  [PATCH 1/1] DVD subtitle consolidation         ← first consumer of shared API
 Phase 5:  [PATCH 1/4] Median Cut + ELBG + GIF cleanup    ← complete unification
@@ -120,22 +120,29 @@ Code at [repo URL]. Tested with roundtrip encode/decode.
 
 Includes encoder, FATE test, reference CRC. Committed `6c96a661fd`.
 
-### Phase 2a: Quantizer API + NeuQuant (new code, zero risk)
+### Phase 2a: Quantizer API + NeuQuant — DONE
 
 ```
-[PATCH 1/2] libavutil: move OkLab color space utilities from libavfilter
-[PATCH 2/2] libavutil: add color quantization API with NeuQuant
+[PATCH 1/2] lavu: move OkLab palette utilities from libavfilter  (118a2b9b2c)
+[PATCH 2/2] lavu: add color quantization API with NeuQuant       (30dd94d8e0)
 ```
 
-Patch 2 includes quantize.h, quantize.c, neuquant.c, tests/quantize.c,
-version bump, and APIchanges — one logical unit with its test.
+Patch 1 is a pure refactor (palette.{h,c} move, include updates, no functional change).
+Patch 2 includes quantize.h, quantize.c, neuquant.{h,c}, tests/quantize.c,
+version bump (MINOR 25→26), and APIchanges — one logical unit with its test.
 
-### Phase 2b: Palette mapping extraction (refactoring, after 2a proven)
+### Phase 2b: Palette mapping extraction — DONE
 
 ```
-[PATCH 1/2] libavutil: extract palette mapping and dithering from vf_paletteuse
-[PATCH 2/2] lavfi/vf_paletteuse: use libavutil palette mapping API
+[PATCH 1/2] lavu: extract palette mapping and dithering from vf_paletteuse  (246b8f30f7)
+[PATCH 2/2] lavfi/vf_paletteuse: use libavutil palette mapping              (2d1cbaadd8)
 ```
+
+Patch 1 creates palettemap.{h,c} with KD-tree colormap, hash cache, and 9 dithering
+algorithms. Internal API only (ff_ prefix). Struct names kept verbatim from original;
+FFColorInfo etc. noted as future work.
+Patch 2 removes ~570 lines from vf_paletteuse.c, replacing with ff_palette_map_*() calls.
+All 4 paletteuse FATE tests produce bit-for-bit identical output.
 
 ### Phase 3: Universal text-to-bitmap (after Phase 2 + RFC consensus)
 
@@ -353,7 +360,7 @@ Upgrades to OkLab perceptual distance, adds dithering (critical at 4 colors).
 
 | Component | Location | Phase |
 |-----------|----------|-------|
-| OkLab ↔ sRGB | `libavfilter/palette.{h,c}` | 2a — move to `libavutil/` |
+| OkLab ↔ sRGB | `libavutil/palette.{h,c}` | 2a — DONE (moved from libavfilter/) |
 | KD-Tree + 9 dithering | `libavfilter/vf_paletteuse.c` | 2b — extract to `libavutil/palettemap.c` |
 | libass rendering | `libavfilter/vf_subtitles.c` | 3 — pattern for `subtitle_render.c` |
 | ELBG quantizer | `libavcodec/elbg.{h,c}` | 5 — wrap as `AV_QUANTIZE_ELBG` |
@@ -379,7 +386,7 @@ Upgrades to OkLab perceptual distance, adds dithering (critical at 4 colors).
 | 2a | `libavutil/palette.{h,c}` | libavutil (moved from libavfilter/) |
 | 2a | `libavutil/quantize.h` | libavutil |
 | 2a | `libavutil/quantize.c` | libavutil |
-| 2a | `libavutil/neuquant.c` | libavutil |
+| 2a | `libavutil/neuquant.{h,c}` | libavutil |
 | 2a | `libavutil/tests/quantize.c` | libavutil |
 | 2b | `libavutil/palettemap.c` | libavutil |
 | 3 | `libavfilter/subtitle_render.{h,c}` | libavfilter |
@@ -391,8 +398,8 @@ Upgrades to OkLab perceptual distance, adds dithering (critical at 4 colors).
 |-------|------|--------|
 | 1 | `libavcodec/{pgssubenc.c,Makefile,allcodecs.c}` | DONE |
 | 1 | `tests/{fate/subtitles.mak,ref/fate/sub-pgs}` | DONE |
-| 2a | `libavutil/{Makefile,version.h}`, `doc/APIchanges` | Add API |
-| 2a | `libavfilter/{Makefile,vf_palettegen.c,vf_paletteuse.c}` | Update includes |
+| 2a | `libavutil/{Makefile,version.h}`, `doc/APIchanges` | DONE |
+| 2a | `libavfilter/{Makefile,vf_palettegen.c,vf_paletteuse.c}` | DONE |
 | 2b | `libavfilter/vf_paletteuse.c` | Use `av_palette_apply()` |
 | 3 | `libavfilter/Makefile`, `fftools/ffmpeg_enc.c` | Rendering + orchestration |
 | 4 | `libavcodec/dvdsubenc.c` | Use shared quantizer |
@@ -406,12 +413,8 @@ Upgrades to OkLab perceptual distance, adds dithering (critical at 4 colors).
 ### Phase 1: DONE
 Committed `6c96a661fd` in ffmpeg submodule.
 
-### Phase 2a: Quantizer API + NeuQuant
-1. Move `libavfilter/palette.{h,c}` → `libavutil/`
-2. Update filter includes + Makefiles
-3. Create `quantize.h` + `quantize.c` + `neuquant.c` + `tests/quantize.c`
-4. Update `libavutil/Makefile`, bump version, update APIchanges
-5. Verify `make fate`
+### Phase 2a: DONE
+Committed `118a2b9b2c` (palette move) and `30dd94d8e0` (quantizer API) in ffmpeg submodule.
 
 ### Phase 2b: Palette mapping extraction
 6. Extract `palettemap.c` from `vf_paletteuse.c`

@@ -101,7 +101,14 @@ Threads coordinate via blocking queues, semaphores, and AtomicBoolean for cancel
 - Match existing style, even if you'd do it differently.
 - Remove imports/variables that YOUR changes made unused, but don't touch pre-existing dead code.
 - Every changed line should trace directly to the user's request.
+- When reviewing, only flag issues in OUR code. Never fix, reorder, or restyle pre-existing upstream code — even if it violates conventions. Our patches must be minimal diffs against upstream.
 
 ### Goal-Driven Execution
 - Transform tasks into verifiable goals with success criteria.
 - For multi-step tasks, state a brief plan with verification steps.
+
+### FFmpeg Extraction Patterns
+- **Two-patch structure:** Patch 1 creates new files (FATE trivially passes), Patch 2 refactors consumer (FATE must be bit-for-bit).
+- **API boundary validation:** When moving code from a filter (with AVOption validation) into a library API, the library must validate its own inputs. AVOption constraints don't follow the code. Any parameter feeding shifts, array indices, or division needs bounds checking at the API boundary.
+- **Heap allocation changes:** When replacing inline struct arrays with heap-allocated contexts, void return types may need to become int to propagate allocation failures. Trace NULL safety through the full call chain.
+- **Review discipline:** Three passes (upstream style, security, functional). For each finding, determine whether we introduced it or it's pre-existing. Only fix what we introduced. Document intentional trade-offs in commit messages.
