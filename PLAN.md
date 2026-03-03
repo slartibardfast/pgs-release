@@ -651,3 +651,29 @@ make -j$(nproc) && make fate  # all quantizers unified
 - FFmpeg `libavcodec/pgssubdec.c` — Reference decoder
 - SUPer — Hardware-validated PGS encoder (composition state transitions,
   decoder model compliance, palette animation sequences)
+
+## Release Builds
+
+Pre-built binaries are distributed via GitHub Actions (`ffmpeg-release.yml`).
+
+### Configuration
+
+Minimal subtitle-focused FFmpeg build (`--disable-everything` + selective enables):
+- **Subtitle decoders**: ASS, SSA, SRT, WebVTT, PGS, DVB, DVD, XSUB, MOV text, and others
+- **Subtitle encoders**: pgssub (ours), ASS, SRT, WebVTT, MOV text, DVB
+- **Container muxers/demuxers**: MKV, MP4, MOV, MPEG-TS, SUP, SRT, ASS, WebVTT, AVI (for copy)
+- **Parsers**: H.264, HEVC, AV1, VP9, AAC, AC3 (bitstream framing for `-c copy`)
+- **BSFs**: h264_mp4toannexb, hevc_mp4toannexb, aac_adtstoasc, extract_extradata
+- **Filters**: subtitles (libass overlay), null, anull, copy, acopy
+- **libass**: statically linked (from pinned `libass/` submodule on Windows; system package on Linux/macOS)
+
+### Targets
+
+| Target | Runner | Toolchain |
+|--------|--------|-----------|
+| linux-x86_64 | ubuntu-24.04 | native gcc |
+| linux-arm64 | ubuntu-24.04-arm | native gcc |
+| macos-x86_64 | macos-13 | native clang |
+| macos-arm64 | macos-14 | native clang |
+| windows-x86_64 | ubuntu-24.04 | mingw-w64 cross |
+| windows-arm64 | ubuntu-24.04 | llvm-mingw cross |
