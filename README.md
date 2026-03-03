@@ -71,6 +71,8 @@ Palette quantization on a representative set of subtitle styles:
 
 ## Animation
 
+![Subtitle fade encoded as PGS](docs/demo.gif)
+
 A `\fad(300,500)` fade on a 3-second event at 24fps:
 
 ```
