@@ -1,0 +1,291 @@
+name: FFmpeg Release
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [created]
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            runner: ubuntu-24.04
+            os: linux
+            ext: ""
+
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+            os: linux
+            ext: ""
+
+          - target: macos-x86_64
+            runner: macos-13
+            os: macos
+            ext: ""
+
+          - target: macos-arm64
+            runner: macos-14
+            os: macos
+            ext: ""
+
+          - target: windows-x86_64
+            runner: ubuntu-24.04
+            os: windows
+            cross: x86_64-w64-mingw32
+            ext: ".exe"
+
+          - target: windows-arm64
+            runner: ubuntu-24.04
+            os: windows
+            cross: aarch64-w64-mingw32
+            ext: ".exe"
+            llvm_mingw: true
+
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # ── Linux ────────────────────────────────────────────────────────────
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            nasm pkg-config \
+            libass-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev
+
+      # ── macOS ────────────────────────────────────────────────────────────
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos'
+        run: |
+          brew install pkg-config libass
+
+      # ── Windows: llvm-mingw (arm64) ──────────────────────────────────────
+      - name: Install llvm-mingw
+        if: matrix.llvm_mingw
+        run: |
+          VERSION=$(curl -fsSL https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest \
+            | grep '"tag_name"' | sed 's/.*"tag_name": "\(.*\)".*/\1/')
+          curl -fsSL -o llvm-mingw.tar.xz \
+            "https://github.com/mstorsjo/llvm-mingw/releases/download/${VERSION}/llvm-mingw-${VERSION}-ucrt-ubuntu-20.04-x86_64.tar.xz"
+          tar xf llvm-mingw.tar.xz
+          echo "$PWD/$(ls -d llvm-mingw-*/)/bin" >> "$GITHUB_PATH"
+
+      # ── Windows: mingw-w64 (x86_64) ─────────────────────────────────────
+      - name: Install mingw-w64
+        if: matrix.os == 'windows' && !matrix.llvm_mingw
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm mingw-w64 pkg-config
+
+      # ── Windows: build libass and dependencies from submodule ────────────
+      - name: Build Windows dependencies
+        if: matrix.os == 'windows'
+        env:
+          CROSS: ${{ matrix.cross }}
+          PREFIX: ${{ github.workspace }}/sysroot
+        run: |
+          set -e
+          mkdir -p "$PREFIX"
+
+          # freetype (no zlib/bzip2/png to keep it simple)
+          curl -fsSL -o ft.tar.xz \
+            https://download.savannah.gnu.org/releases/freetype/freetype-2.13.3.tar.xz
+          tar xf ft.tar.xz
+          cd freetype-2.13.3
+          ./configure --host="$CROSS" --prefix="$PREFIX" \
+            --enable-static --disable-shared \
+            --without-bzip2 --without-png --without-zlib --with-harfbuzz=no \
+            CFLAGS="-O2"
+          make -j$(nproc) install
+          cd ..
+
+          # fribidi
+          curl -fsSL -o fribidi.tar.xz \
+            https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz
+          tar xf fribidi.tar.xz
+          cd fribidi-1.0.16
+          ./configure --host="$CROSS" --prefix="$PREFIX" \
+            --enable-static --disable-shared --disable-docs \
+            CFLAGS="-O2"
+          make -j$(nproc) install
+          cd ..
+
+          # libass from pinned submodule (0.17.4)
+          cd libass
+          ./autogen.sh
+          PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
+          ./configure --host="$CROSS" --prefix="$PREFIX" \
+            --enable-static --disable-shared \
+            --disable-fontconfig --disable-require-system-font-provider \
+            CFLAGS="-O2"
+          make -j$(nproc) install
+          cd ..
+
+      # ── Build FFmpeg ─────────────────────────────────────────────────────
+      - name: Configure FFmpeg
+        working-directory: ffmpeg
+        env:
+          PREFIX: ${{ github.workspace }}/sysroot
+        run: |
+          # Common flags: minimal subtitle-focused build
+          FLAGS=(
+            --disable-everything
+            --enable-libass
+            --enable-static
+            --disable-shared
+            --enable-small
+            --disable-debug
+            --disable-doc
+            --enable-ffmpeg
+            --enable-ffprobe
+            --disable-ffplay
+
+            # Protocols
+            --enable-protocol=file,pipe
+
+            # Subtitle decoders
+            --enable-decoder=ass
+            --enable-decoder=ssa
+            --enable-decoder=subrip
+            --enable-decoder=webvtt
+            --enable-decoder=hdmv_pgs_subtitle
+            --enable-decoder=dvb_subtitle
+            --enable-decoder=dvdsub
+            --enable-decoder=xsub
+            --enable-decoder=mov_text
+            --enable-decoder=microdvd
+            --enable-decoder=jacosub
+            --enable-decoder=realtext
+            --enable-decoder=text
+
+            # Subtitle encoders
+            --enable-encoder=pgssub
+            --enable-encoder=ass
+            --enable-encoder=subrip
+            --enable-encoder=webvtt
+            --enable-encoder=mov_text
+            --enable-encoder=dvbsub
+
+            # Container muxers (for subtitle output and -c copy)
+            --enable-muxer=matroska
+            --enable-muxer=mp4
+            --enable-muxer=mov
+            --enable-muxer=mpegts
+            --enable-muxer=sup
+            --enable-muxer=srt
+            --enable-muxer=ass
+            --enable-muxer=webvtt
+            --enable-muxer=avi
+            --enable-muxer=null
+
+            # Container demuxers
+            --enable-demuxer=matroska
+            --enable-demuxer=mov
+            --enable-demuxer=mpegts
+            --enable-demuxer=sup
+            --enable-demuxer=srt
+            --enable-demuxer=ass
+            --enable-demuxer=webvtt
+            --enable-demuxer=avi
+
+            # Parsers: bitstream framing for -c:v copy and -c:a copy
+            --enable-parser=h264
+            --enable-parser=hevc
+            --enable-parser=av1
+            --enable-parser=vp9
+            --enable-parser=mpeg4video
+            --enable-parser=aac
+            --enable-parser=ac3
+            --enable-parser=mpegaudio
+            --enable-parser=vorbis
+            --enable-parser=opus
+
+            # Bitstream filters: container remuxing (e.g. mp4→mkv)
+            --enable-bsf=h264_mp4toannexb
+            --enable-bsf=hevc_mp4toannexb
+            --enable-bsf=aac_adtstoasc
+            --enable-bsf=extract_extradata
+
+            # Filters
+            --enable-filter=subtitles
+            --enable-filter=null
+            --enable-filter=anull
+            --enable-filter=copy
+            --enable-filter=acopy
+          )
+
+          # Cross-compilation flags for Windows
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            ARCH=$(echo "${{ matrix.cross }}" | cut -d- -f1)
+            FLAGS+=(
+              --cross-prefix="${{ matrix.cross }}-"
+              --target-os=mingw32
+              --arch="$ARCH"
+              --pkg-config=pkg-config
+              --pkg-config-flags=--static
+              --extra-cflags="-I$PREFIX/include"
+              --extra-ldflags="-L$PREFIX/lib"
+            )
+          fi
+
+          ./configure "${FLAGS[@]}"
+
+      - name: Build FFmpeg
+        working-directory: ffmpeg
+        run: make -j$(nproc)
+
+      - name: Collect binaries
+        run: |
+          mkdir -p dist
+          cp ffmpeg/ffmpeg${{ matrix.ext }}  dist/
+          cp ffmpeg/ffprobe${{ matrix.ext }} dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.target }}
+          path: dist/
+
+  # ── Package and attach to GitHub release ──────────────────────────────────
+  release:
+    name: Attach to release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: false
+
+      - name: Package
+        run: |
+          cd artifacts
+          for dir in */; do
+            target="${dir%/}"
+            cd "$dir"
+            if [[ "$target" == *windows* ]]; then
+              zip "../../ffmpeg-${target}.zip" *
+            else
+              tar czf "../../ffmpeg-${target}.tar.gz" *
+            fi
+            cd ..
+          done
+          cd ..
+          ls -lh ffmpeg-*.{tar.gz,zip} 2>/dev/null || ls -lh ffmpeg-*
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ffmpeg-*.tar.gz
+            ffmpeg-*.zip
