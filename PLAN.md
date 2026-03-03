@@ -78,8 +78,8 @@ Phase 0:  RFC email
 Phase 1:  [PATCH 1/1] PGS encoder + composition states    ← DONE (2cc882f669), includes state machine
 Phase 2a: [PATCH 1/2] OkLab move + Quantizer API          ← DONE (8e60ec654f, 8d7abb5328)
 Phase 2b: [PATCH 1/2] Palette mapping extraction           ← DONE (3326aa9602, 557d01153a)
-Phase 3:  [PATCH 1/2] Text-to-bitmap + rect splitting     ← DONE (0b803170ab, 9c953175c6), AMEND PENDING
-Phase 3a: [PATCH 1/1] Text-to-bitmap: universal animation ← format-agnostic fade/motion/transform
+Phase 3:  [PATCH 1/2] Text-to-bitmap + rect splitting     ← DONE
+Phase 3a: [PATCH 1/1] Text-to-bitmap: universal animation ← DONE
 Phase 4:  [PATCH 1/1] DVD subtitle consolidation           ← first consumer of shared API
 Phase 5:  [PATCH 1/4] Median Cut + ELBG + GIF cleanup      ← complete unification
 ```
@@ -431,14 +431,15 @@ to detect libass availability at runtime without preprocessor conditionals).
 
 PGS supports up to 2 non-overlapping composition objects per display set.
 When a rendered bitmap contains a horizontal transparent gap (e.g. text
-at top and bottom of screen), the conversion splits it into 2 rects,
-each independently quantized. This avoids wasting bandwidth on transparent
-pixels spanning the gap.
+at top and bottom of screen), the conversion splits it into 2 rects.
+This avoids wasting bandwidth on transparent pixels spanning the gap.
 
 Algorithm: scan rows of rendered RGBA for fully-transparent runs. If a
-gap exceeds a threshold, split into top and bottom rects. Realloc the
-subtitle's rects array and create a second AVSubtitleRect. Analogous to
-PunkGraphicStream's `walkClips()` approach.
+gap exceeds a threshold (32 rows), quantize the full RGBA image first,
+then split the index buffer into top and bottom halves. Both halves share
+one palette — PGS allows only one PDS (palette) per Display Set, so
+independent quantization per half would produce incorrect colors for the
+second rect (the encoder writes only `rects[0]->data[1]` as the PDS).
 
 ### Animation pipeline (Phase 3a)
 
@@ -584,17 +585,10 @@ Committed `8e60ec654f` (palette move) and `8d7abb5328` (quantizer API) in ffmpeg
 ### Phase 2b: DONE
 Committed `3326aa9602` (extract) and `557d01153a` (refactor filter).
 
-### Phase 3: DONE (core text-to-bitmap)
-Committed `0b803170ab` (render utility) and `9c953175c6` (fftools orchestration).
-Rect splitting implemented, uncommitted.
-
-### Phase 3a: Universal animation pipeline (DONE, uncommitted)
-1. Extend render API: `init_event()` + `sample()` for multi-timepoint rendering
-2. Create `ffmpeg_subtitle_animation.c`: classify changes, alpha scaling
-3. Every-frame scan with format-hint gating in `do_subtitle_out_animated()`
-4. Two-pass encode: scan for peak alpha + classify, then emit optimal DS chain
-5. PGS encoder `palette_version` ordering fix
-6. FATE tests: encoder state machine (6 tests) + animation utility tests
+### Phase 3 + 3a: DONE
+All committed on `upstream-reorg` branch, reorganized into 4 independent
+submission series (A: PGS encoder, B: quantization, C: renderer,
+D: text-to-bitmap). See plan file for series details.
 
 ### Phase 4: DVD subtitle consolidation
 8. Replace dvdsubenc.c with shared API calls

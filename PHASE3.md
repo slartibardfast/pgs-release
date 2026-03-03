@@ -1,10 +1,9 @@
 # Phase 3: Text-to-Bitmap Subtitle Conversion
 
-## Status: DONE (core + rect splitting + animation), uncommitted amendments pending
+## Status: DONE (core + rect splitting + animation)
 
-Core text-to-bitmap committed as `0b803170ab` (renderer) + `9c953175c6`
-(fftools orchestration). Rect splitting and universal animation pipeline
-implemented but uncommitted. Encoder composition states done in Phase 1.
+All committed on `upstream-reorg` branch, reorganized into 4 independent
+submission series. Encoder composition states done in Phase 1.
 
 ## Context
 
@@ -428,7 +427,7 @@ FATE_SAMPLES=/tmp/fate-samples make fate-filter-sub2video
 | `libavcodec/avcodec.h` | **Reference** — AVSubtitleRect struct |
 | `fftools/ffmpeg_filter.c` | **Reference** — sub2video_copy_rect pattern |
 
-## Rect Splitting (in progress)
+## Rect Splitting
 
 ### Problem
 
@@ -440,26 +439,31 @@ bandwidth on transparent pixels and RLE-encodes empty rows.
 
 PGS supports up to 2 non-overlapping composition objects per display set.
 Splitting the bitmap at a transparent gap produces two smaller objects,
-each with its own window, position, and independently quantized palette.
+each with its own window and position.
 
 ### Algorithm
 
-In `convert_text_to_bitmap()` (fftools/ffmpeg_enc.c):
+In `convert_text_to_bitmap()` and `flush_coalesced_subtitles()`:
 
-1. After rendering RGBA, scan rows for a fully-transparent horizontal gap
-2. If gap exceeds threshold (32 rows default), split into top and bottom
-3. Each half is independently quantized (separate `av_quantize_*` calls)
-4. The original rect is rewritten as top; a second rect is allocated for bottom
-5. The PGS encoder handles 2 rects natively (already supported)
+1. After rendering RGBA, quantize the full image to palette + indices
+2. Scan rows for a fully-transparent horizontal gap (threshold: 32 rows)
+3. If gap found, split the index buffer into top and bottom halves
+4. Both halves share one palette via `fill_rect_bitmap()` helper
+
+**Critical constraint**: PGS allows only one PDS (palette) per Display Set.
+The encoder writes `rects[0]->data[1]` as the single PDS. Independent
+quantization per half would produce incorrect colors for the second rect —
+its palette indices would reference the first rect's palette. The fix is
+to quantize once, then distribute indices.
 
 ### Implementation
 
-Three functions added to `fftools/ffmpeg_enc.c`:
-- `quantize_rgba_to_rect()` — extracted helper for RGBA → palette + indices
+Functions in `fftools/ffmpeg_enc.c` and `fftools/ffmpeg_subtitle_animation.c`:
 - `find_transparent_gap()` — scan for horizontal gap in RGBA data
-- Updated `convert_text_to_bitmap()` — split logic when gap found
-
-Status: implemented, builds, uncommitted. Needs FATE test coverage.
+- `fill_rect_bitmap()` — fill AVSubtitleRect from pre-quantized indices + shared palette
+- `quantize_rgba_to_rect()` — single-rect helper (quantize + fill)
+- Both `convert_text_to_bitmap()` and `flush_coalesced_subtitles()` use
+  quantize-first-then-split when a gap is found
 
 ## Animation Support
 
@@ -514,7 +518,7 @@ Position animation requires PCS + WDS + END (~30-50 bytes), even smaller.
 
 ## Phase 3a: Universal Subtitle Animation
 
-### Status: DONE (uncommitted)
+### Status: DONE
 
 ### Key Insight
 
