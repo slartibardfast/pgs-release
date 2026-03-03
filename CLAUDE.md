@@ -107,6 +107,12 @@ Threads coordinate via blocking queues, semaphores, and AtomicBoolean for cancel
 - Transform tasks into verifiable goals with success criteria.
 - For multi-step tasks, state a brief plan with verification steps.
 
+### Document Before You Work (MUST)
+Before any decision or body of work that changes design, architecture, or approach:
+1. Update the relevant `PLAN.md` or `PHASE[N].md` to record the decision and rationale
+2. Commit and push those docs before writing code
+This ensures the record reflects intent, not reconstruction. Skip only for trivial fixes with no design content.
+
 ### FFmpeg Extraction Patterns
 - **Two-patch structure:** Patch 1 creates new files (FATE trivially passes), Patch 2 refactors consumer (FATE must be bit-for-bit).
 - **API boundary validation:** When moving code from a filter (with AVOption validation) into a library API, the library must validate its own inputs. AVOption constraints don't follow the code. Any parameter feeding shifts, array indices, or division needs bounds checking at the API boundary.
