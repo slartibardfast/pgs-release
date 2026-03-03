@@ -200,17 +200,17 @@ jobs:
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o ft.tar.gz \
             https://github.com/freetype/freetype/archive/refs/tags/VER-2-13-3.tar.gz
           tar xf ft.tar.gz
-          cd freetype-VER-2-13-3
-          autoreconf -fiv
-          CFLAGS="-O2 -I$PREFIX/include" \
-          LDFLAGS="-L$PREFIX/lib" \
-          ./configure $AUTOCONF_FLAGS \
-            --with-zlib=yes \
-            --without-bzip2 \
-            --without-png \
-            --with-harfbuzz=no
-          make -j$(nproc) install
-          cd ..
+          cmake -S freetype-VER-2-13-3 -B ft-build \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DFT_REQUIRE_ZLIB=ON \
+            -DFT_DISABLE_BZIP2=ON \
+            -DFT_DISABLE_PNG=ON \
+            -DFT_DISABLE_HARFBUZZ=ON \
+            -DFT_DISABLE_BROTLI=ON \
+            -GNinja
+          ninja -C ft-build install
 
           # ── fribidi (BiDi algorithm for RTL languages) ────────────────────
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o fribidi.tar.xz \
@@ -249,19 +249,17 @@ jobs:
           ninja -C hb-build install
 
           # ── freetype2 rebuild with harfbuzz (color glyphs, OTL features) ──
-          rm -rf freetype-VER-2-13-3/build
-          cd freetype-VER-2-13-3
-          make distclean || true
-          CFLAGS="-O2 -I$PREFIX/include" \
-          LDFLAGS="-L$PREFIX/lib" \
-          PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
-          ./configure $AUTOCONF_FLAGS \
-            --with-zlib=yes \
-            --without-bzip2 \
-            --without-png \
-            --with-harfbuzz=yes
-          make -j$(nproc) install
-          cd ..
+          cmake -S freetype-VER-2-13-3 -B ft-build2 \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DFT_REQUIRE_ZLIB=ON \
+            -DFT_DISABLE_BZIP2=ON \
+            -DFT_DISABLE_PNG=ON \
+            -DFT_REQUIRE_HARFBUZZ=ON \
+            -DFT_DISABLE_BROTLI=ON \
+            -GNinja
+          ninja -C ft-build2 install
 
           # ── libass (pinned 0.17.4 from submodule) ─────────────────────────
           cd libass
