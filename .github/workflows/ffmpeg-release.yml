@@ -366,10 +366,15 @@ jobs:
 
           # Native build with sysroot (Linux or macOS arm64)
           if [ "${{ matrix.os }}" != "windows" ] && [ -z "${{ matrix.macos_target }}" ]; then
+            # Linux: statically link GCC + C++ runtimes so libgcc_s.so and
+            # libstdc++.so don't leak in (harfbuzz brings C++ object files).
+            # macOS uses Clang; libc++.dylib is a guaranteed system library.
+            EXTRA_LD="-L$PREFIX/lib"
+            [ "${{ matrix.os }}" = "linux" ] && EXTRA_LD="$EXTRA_LD -static-libgcc -static-libstdc++"
             FLAGS+=(
               --pkg-config-flags=--static
               --extra-cflags="-I$PREFIX/include"
-              --extra-ldflags="-L$PREFIX/lib"
+              --extra-ldflags="$EXTRA_LD"
             )
             export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
             export PKG_CONFIG_PATH=""
