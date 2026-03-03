@@ -145,12 +145,27 @@ jobs:
           export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
           export PKG_CONFIG_PATH=""
 
+          # CMake requires CMAKE_C_COMPILER to be a bare path (no spaces).
+          # For macOS cross-compile, wrap the compiler+target flag in a script.
+          if [ -n "$MACOS_TARGET" ]; then
+            printf '#!/bin/sh\nexec clang -target %s "$@"\n' "$MACOS_TARGET" \
+              > /tmp/cc-wrap
+            printf '#!/bin/sh\nexec clang++ -target %s "$@"\n' "$MACOS_TARGET" \
+              > /tmp/cxx-wrap
+            chmod +x /tmp/cc-wrap /tmp/cxx-wrap
+            CMAKE_CC=/tmp/cc-wrap
+            CMAKE_CXX=/tmp/cxx-wrap
+          else
+            CMAKE_CC="$CC"
+            CMAKE_CXX="$CXX"
+          fi
+
           # ── CMake toolchain file ───────────────────────────────────────────
           cat > /tmp/cross.cmake << EOF
           set(CMAKE_SYSTEM_NAME ${CMAKE_SYSTEM_NAME:-$(uname -s)})
           set(CMAKE_SYSTEM_PROCESSOR $CMAKE_PROCESSOR)
-          set(CMAKE_C_COMPILER "$CC")
-          set(CMAKE_CXX_COMPILER "$CXX")
+          set(CMAKE_C_COMPILER "$CMAKE_CC")
+          set(CMAKE_CXX_COMPILER "$CMAKE_CXX")
           set(CMAKE_AR "$AR")
           set(CMAKE_RANLIB "$RANLIB")
           set(CMAKE_FIND_ROOT_PATH "$PREFIX")
@@ -203,8 +218,13 @@ jobs:
           curl -fsSL -o hb.tar.xz \
             https://github.com/harfbuzz/harfbuzz/releases/download/10.2.0/harfbuzz-10.2.0.tar.xz
           tar xf hb.tar.xz
+          # Windows: harfbuzz.cc amalgamation exceeds default COFF section limit
+          HB_EXTRA=()
+          [[ "${CROSS:-}" == *mingw* ]] && HB_EXTRA+=(-DCMAKE_CXX_FLAGS=-Wa,-mbig-obj)
+
           cmake -S harfbuzz-10.2.0 -B hb-build \
             -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
+            "${HB_EXTRA[@]}" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" \
             -DBUILD_SHARED_LIBS=OFF \
             -DHB_HAVE_FREETYPE=ON \
