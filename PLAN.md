@@ -586,7 +586,7 @@ Committed `8e60ec654f` (palette move) and `8d7abb5328` (quantizer API) in ffmpeg
 Committed `3326aa9602` (extract) and `557d01153a` (refactor filter).
 
 ### Phase 3 + 3a: DONE
-All committed on `upstream-reorg` branch, reorganized into 4 independent
+All committed on `pgs-series` branch, reorganized into 4 independent
 submission series (A: PGS encoder, B: quantization, C: renderer,
 D: text-to-bitmap). See plan file for series details.
 

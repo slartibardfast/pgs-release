@@ -2,7 +2,7 @@
 
 ## Status: DONE (core + rect splitting + animation)
 
-All committed on `upstream-reorg` branch, reorganized into 4 independent
+All committed on `pgs-series` branch, reorganized into 4 independent
 submission series. Encoder composition states done in Phase 1.
 
 ## Context
