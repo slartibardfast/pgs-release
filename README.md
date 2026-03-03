@@ -122,4 +122,4 @@ Developed with assistance from [Claude](https://claude.ai) (Anthropic).
 
 ## Historical note
 
-This work grew out of [PunkGraphicStream](punkgraphicstream/), a Java application that converts ASS subtitles to PGS/SUP for Blu-ray authoring. The Java encoder proved the approach and informed the FFmpeg implementation, particularly the PGS composition state machine and decoder model compliance.
+This work grew out of [PunkGraphicStream](https://github.com/slartibardfast/punkgraphicstream), a Java application that converts ASS subtitles to PGS/SUP for Blu-ray authoring. The Java encoder proved the approach and informed the FFmpeg implementation, particularly the PGS composition state machine and decoder model compliance.
