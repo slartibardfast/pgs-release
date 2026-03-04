@@ -93,10 +93,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y nasm mingw-w64 pkg-config cmake ninja-build
-          # Remove the DLL import library so the linker is forced to use
-          # libwinpthread.a. The posix-model GCC adds -lwinpthread via its
-          # internal link spec; without the .dll.a it resolves statically.
-          sudo rm /usr/x86_64-w64-mingw32/lib/libwinpthread.dll.a
+          # Switch to win32 threading model. Ubuntu's posix-model libgcc.a has
+          # libwinpthread-1.dll in its import table regardless of -static-libgcc.
+          # The win32-model libgcc has no winpthread reference at all.
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc \
+            /usr/bin/x86_64-w64-mingw32-gcc-win32
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ \
+            /usr/bin/x86_64-w64-mingw32-g++-win32
 
       # ── Windows arm64: build tools ────────────────────────────────────────
       - name: Install build tools for llvm-mingw
@@ -187,16 +190,6 @@ jobs:
           EOF
 
           AUTOCONF_FLAGS="$AUTOCONF_HOST --prefix=$PREFIX --enable-static --disable-shared"
-
-          # ── Windows: seed sysroot with static winpthread ───────────────────
-          # All pkg-config .pc files (libass, harfbuzz, freetype) list
-          # -lwinpthread in Libs.private. Placing libwinpthread.a in $PREFIX/lib
-          # (the first -L path) means every -lwinpthread in the final link
-          # resolves to the static copy, not the DLL import library.
-          if [ -n "$CROSS" ] && [ -f "/usr/$CROSS/lib/libwinpthread.a" ]; then
-            mkdir -p "$PREFIX/lib"
-            cp "/usr/$CROSS/lib/libwinpthread.a" "$PREFIX/lib/"
-          fi
 
           # ── zlib ──────────────────────────────────────────────────────────
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o zlib.tar.gz \
@@ -405,6 +398,7 @@ jobs:
               --pkg-config-flags=--static
               --extra-cflags="-I$PREFIX/include"
               --extra-ldflags="-L$PREFIX/lib -static-libgcc"
+              --disable-pthreads
             )
             export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
             export PKG_CONFIG_PATH=""
