@@ -257,10 +257,10 @@ footer a { color: var(--fg2); }
   <h1>Text-to-Bitmap Subtitle Conversion for FFmpeg</h1>
   <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception. Converting text subtitles (SRT, ASS, WebVTT) to bitmap format (PGS, DVB, DVD, XSUB) has been broken for over a decade.</p>
   <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
-  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. It blocks 72 subtitle conversion pairs. This repository contains 17 patches that fix it.</p>
+  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. It blocks 72 subtitle conversion pairs. This repository contains 18 patches that fix it.</p>
   <div class="stats">
-    <div><span class="stat-num">17</span><span class="stat-label">Patches</span></div>
-    <div><span class="stat-num">14</span><span class="stat-label">Tests</span></div>
+    <div><span class="stat-num">18</span><span class="stat-label">Patches</span></div>
+    <div><span class="stat-num">7</span><span class="stat-label">Tests</span></div>
     <div><span class="stat-num">72</span><span class="stat-label">Pairs unlocked</span></div>
   </div>
 </header>
@@ -281,7 +281,7 @@ footer a { color: var(--fg2); }
     <div class="series-header">
       <span class="series-letter">A</span>
       <span class="series-title">PGS Encoder</span>
-      <span class="series-count">&middot; 2 patches</span>
+      <span class="series-count">&middot; 1 patch</span>
     </div>
     <ul>
       <li>Full composition state machine with automatic Display Set type selection</li>
@@ -293,11 +293,12 @@ footer a { color: var(--fg2); }
     <div class="series-header">
       <span class="series-letter">B</span>
       <span class="series-title">Quantization API</span>
-      <span class="series-count">&middot; 9 patches</span>
+      <span class="series-count">&middot; 11 patches</span>
     </div>
     <ul>
       <li>NeuQuant, Median Cut, and ELBG quantizers via <code>av_quantize_*</code> API</li>
       <li>OkLab perceptual colour space, palette remapping and dithering from <code>vf_paletteuse</code></li>
+      <li>Region-weighted palette generation for overlapping subtitle events</li>
       <li><a href="quantizers/">Algorithm comparison with PSNR and timing data</a></li>
     </ul>
   </div>
@@ -358,19 +359,15 @@ Pass 2  encode:
 
 <section>
   <h2>Tests</h2>
-  <p style="margin-bottom:1rem">14 FATE tests, all passing:</p>
+  <p style="margin-bottom:1rem">7 new FATE tests, all passing:</p>
   <div class="fate-list">
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-pgs</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">quantize</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">pgs-fade</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">pgs-animation-util</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">pgs-animation-timing</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">pgs-coalesce</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">pgs-rectsplit</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">paletteuse-*</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">mediancut-basic</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">mediancut-regions</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">elbg-basic</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-fade</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-util</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-timing</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-coalesce</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-rectsplit</span></div>
   </div>
 </section>
 
