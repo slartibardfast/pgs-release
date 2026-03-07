@@ -81,7 +81,7 @@ Phase 2b: [PATCH 1/2] Palette mapping extraction           ← DONE (3326aa9602,
 Phase 3:  [PATCH 1/2] Text-to-bitmap + rect splitting     ← DONE
 Phase 3a: [PATCH 1/1] Text-to-bitmap: universal animation ← DONE
 Phase 4:  [PATCH 1/2] Region-weighted quantization          ← DONE (fd72cd4d83, b4ed0c4e82)
-Phase 5:  [PATCH 1/3] Median Cut + ELBG algorithm integration ← algorithm unification
+Phase 5:  [PATCH 1/2] Median Cut algorithm integration         ← algorithm unification
 Phase 6:  [PATCH 1/2] GIF encoder RGBA quantization          ← direct RGBA→GIF encoding
 ```
 
