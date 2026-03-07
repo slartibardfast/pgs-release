@@ -3,11 +3,28 @@
 ## Status: DONE
 
 Two commits on `pgs-series` branch:
-- `fd72cd4d83` lavu/quantize: add region-weighted palette generation
-- `b4ed0c4e82` fftools: use region-weighted quantization for coalesced subtitles
+- `cb332e7d7b` lavu/quantize: add region-weighted palette generation
+- `2b03815c86` fftools: use region-weighted quantization for coalesced subtitles
 
 Also squashed a pre-existing Phase 3a bug fix (missing `!CONFIG_LIBASS`
 stub for `avfilter_subtitle_render_add_event`) into `9f1dfb5401`.
+
+### Series review cleanup (2026-03-07)
+
+During a full 14-commit series review, the following cross-cutting issues
+were found and fixed via rebase:
+
+- **FFPaletteMapContext made opaque** (Phase 2b) — struct moved from
+  palettemap.h to palettemap.c, added `ff_palette_map_get_palette()` and
+  `ff_palette_map_get_nodes()` accessors, updated vf_paletteuse.c consumer
+- **APIchanges completed** (Phase 3) — added missing `init_event`,
+  `add_event`, `sample` entries to doc/APIchanges
+- **Doxygen consistency** (Phase 3) — added `[in]/[out]` parameter
+  direction markers to all functions in subtitle_render.h
+- **Commit reordering** (Phase 3/3a) — core text-to-bitmap now precedes
+  animation utilities to match PLAN.md phase dependency structure
+- **Ticket references** (Phase 3) — added `Ref: trac.ffmpeg.org/ticket/3819`
+  to subtitle rendering and text-to-bitmap commit trailers
 
 ## Problem
 
