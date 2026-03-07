@@ -68,42 +68,30 @@ instead of `ctx->max_colors`.
 
 ## C. SECURITY (integer overflow)
 
-### C1. `gif.c:479` -- `int nb_pixels = w * h`
+### C1. `gif.c:479` -- `int nb_pixels = w * h` -- DONE
 
-GIF allows up to 65535x65535. Product overflows `int` (max ~2.1B).
-Fix: `if ((int64_t)w * h > INT_MAX) return AVERROR(EINVAL);`
+Fixed: `if ((int64_t)w * h > INT_MAX) return AVERROR(EINVAL);`
 
-### C2. `pgssubenc.c:354` -- `rect->w * rect->h * 4`
+### C2. `pgssubenc.c:354` -- `rect->w * rect->h * 4` -- DONE
 
-No guard against overflow in RLE allocation size.
-Fix: `int64_t` intermediate with `INT_MAX / 4` check.
+Fixed: `int64_t alloc64` intermediate with `> INT_MAX` check.
 
-### C3. `ffmpeg_enc.c` -- `rw * rh` in 4 locations
+### C3. `ffmpeg_enc.c` -- `rw * rh` in 4 locations -- DONE
 
-Lines 418, 464, 626, 1366: all use `int nb_pixels = rw * rh` without
-overflow check.
-Fix: use `(int)FFMIN((int64_t)rw * rh, INT_MAX)` pattern (already used
-at line 1394).
+Fixed: all 4 use `(int)FFMIN((int64_t)rw * rh, INT_MAX)` pattern.
 
-### C4. `subtitle_render.c:206-208` -- `stride * bh` allocation
+### C4. `subtitle_render.c:206-208` -- `stride * bh` allocation -- DONE
 
-`stride = bw * 4` then `av_mallocz(stride * bh)`. Both multiplications
-are `int * int` with no overflow guard. Also no upper bound on canvas
-dimensions in `avfilter_subtitle_render_alloc`.
+Fixed: `(size_t)stride * bh` for malloc, plus
+`(int64_t)canvas_w * canvas_h > INT_MAX / 4` in alloc.
 
-Fix: add `if ((int64_t)canvas_w * canvas_h > INT_MAX / 4)` in alloc,
-and use `(size_t)stride * bh` for the malloc call.
+### C5. `neuquant.c` / `mediancut.c` -- missing `nb_pixels` overflow guard -- DONE
 
-### C5. `neuquant.c` / `mediancut.c` -- missing `nb_pixels` overflow guard
+Fixed: `if (nb_pixels > INT_MAX / 4)` in `av_quantize_generate_palette`.
 
-Called from `av_quantize_generate_palette` without `nb_pixels > INT_MAX / 4`
-check when no regions are used.
-Fix: add the check in `av_quantize_generate_palette` before dispatching.
+### C6. `palettemap.c:192-193` -- `y_start * linesize` overflow -- DONE
 
-### C6. `palettemap.c:192-193` -- `y_start * linesize` overflow
-
-`int * int` multiplication with no protection.
-Fix: cast to `size_t` or `ptrdiff_t`.
+Fixed: cast to `(size_t)` for both pointer offsets.
 
 ---
 
