@@ -97,30 +97,25 @@ Fixed: cast to `(size_t)` for both pointer offsets.
 
 ## D. API BOUNDARY (missing validation)
 
-### D1. `palettemap.c:555` -- no dither enum range check
+### D1. `palettemap.c:555` -- no dither enum range check -- DONE
 
-`ff_palette_map_apply` does not validate `dither < 0 || dither >= FF_NB_DITHERING`.
-Fix: add `if (dither < 0 || dither >= FF_NB_DITHERING) return AVERROR(EINVAL);`
+Fixed: `if (dither < 0 || dither >= FF_NB_DITHERING)` check added.
 
-### D2. `palettemap.c:555` -- no w/h/x_start/y_start validation
+### D2. `palettemap.c:555` -- no w/h/x_start/y_start validation -- DONE
 
-Negative values or values exceeding buffer size cause out-of-bounds writes.
-Fix: validate non-negative and within reasonable bounds.
+Fixed: `if (w < 0 || h < 0 || x_start < 0 || y_start < 0)` check added.
 
-### D3. `palettemap.c:525` -- no NULL check on `palette` param
+### D3. `palettemap.c:525` -- no NULL check on `palette` param -- DONE
 
-`ff_palette_map_init` segfaults on NULL palette.
-Fix: `if (!palette) return NULL;`
+Fixed: `if (!palette) return NULL;` before allocation.
 
-### D4. `palettemap.c:588,593` -- no NULL check in get_palette/get_nodes
+### D4. `palettemap.c:588,593` -- no NULL check in get_palette/get_nodes -- DONE
 
-Other functions check for NULL ctx; these two don't.
-Fix: add `if (!ctx) return NULL;`
+Fixed: added `if (!ctx) return NULL;` to both functions.
 
-### D5. `subtitle_render.c:47` -- no upper bound on canvas dimensions
+### D5. `subtitle_render.c:47` -- no upper bound on canvas dimensions -- DONE
 
-Only checks `<= 0`, not overflow-inducing large values.
-Fix: add upper bound check (e.g., 32768x32768 or INT_MAX/4 check).
+Fixed in C4: `(int64_t)canvas_w * canvas_h > INT_MAX / 4` check.
 
 ---
 
