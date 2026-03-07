@@ -22,6 +22,12 @@ target/
 .DS_Store
 Thumbs.db
 
+# Phase 4 test binaries
+phase4_compare
+phase4_debug
+phase4_hyab
+phase4_metrics
+
 # Local tools and references (not tracked)
 SUPer/
 tools/
