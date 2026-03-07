@@ -81,7 +81,7 @@ Phase 2b: [PATCH 1/2] Palette mapping extraction           ← DONE (3326aa9602,
 Phase 3:  [PATCH 1/2] Text-to-bitmap + rect splitting     ← DONE
 Phase 3a: [PATCH 1/1] Text-to-bitmap: universal animation ← DONE
 Phase 4:  [PATCH 1/2] Region-weighted quantization          ← DONE (fd72cd4d83, b4ed0c4e82)
-Phase 5:  [PATCH 1/4] Median Cut + ELBG algorithm integration  ← DONE
+Phase 5:  [PATCH 1/5] Median Cut + ELBG algorithm integration  ← DONE
 Phase 6:  [PATCH 1/2] GIF encoder RGBA quantization          ← direct RGBA→GIF encoding
 ```
 
@@ -215,9 +215,11 @@ sparse per-region palette coverage. See PHASE4.md for full design.
 ### Phase 5: Algorithm integration (after Phase 2)
 
 ```
-[PATCH 1/3] libavutil: add Median Cut quantizer algorithm
-[PATCH 2/3] lavfi/vf_palettegen: use libavutil quantizer API
-[PATCH 3/3] libavutil: add ELBG quantizer algorithm
+[PATCH 1/5] libavutil: add Median Cut quantizer algorithm
+[PATCH 2/5] lavfi/vf_palettegen: use libavutil Median Cut API
+[PATCH 3/5] libavutil: move ELBG from libavcodec to libavutil
+[PATCH 4/5] libavutil: add ELBG quantizer algorithm
+[PATCH 5/5] lavc/pgssubenc, fftools: add quantize_method option
 ```
 
 ### Phase 6: GIF encoder RGBA quantization (after Phase 5)

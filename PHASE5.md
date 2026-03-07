@@ -36,6 +36,13 @@ Extract Median Cut and ELBG quantization algorithms into the shared
    - Quality maps to ELBG steps: 1-10→1, 11-20→2, 21-30→3
    - Added FATE test (4 color clusters), bumped lavu 60.28→60.29
 
+5. `lavc/pgssubenc, fftools: add quantize_method option` (pending)
+   - Added `quantize_method` AVOption to PGS encoder (elbg/mediancut/neuquant)
+   - fftools reads option via `av_opt_get_int` from encoder's priv_data
+   - All 3 quantize call sites in ffmpeg_enc.c now use selected algorithm
+   - Default remains NeuQuant for backward compatibility
+   - Encoders without the option fall back to NeuQuant
+
 ## Design Decisions
 
 ### Median Cut extraction
@@ -85,3 +92,11 @@ RGBA color quantization converts pixels to 4D int vectors (R,G,B,A),
 runs ELBG to find codebook entries, then converts back to palette.
 Nearest-neighbor mapping uses simple squared Euclidean distance in
 RGBA space.
+
+### Quantizer selectability
+
+The `quantize_method` AVOption on the PGS encoder stores the user's
+choice. fftools reads it from `enc_ctx->priv_data` via `av_opt_get_int`
+with a NeuQuant fallback for encoders that don't have the option (e.g.
+DVB sub). This keeps the encoder and fftools loosely coupled — the
+encoder declares its preferences, fftools honors them.
