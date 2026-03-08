@@ -101,7 +101,7 @@ jobs:
         env:
           PREFIX: ${{ github.workspace }}/sysroot
         run: |
-          SYSROOT_URL="https://github.com/${{ github.repository }}/releases/download/sysroot-v1"
+          SYSROOT_URL="https://github.com/${{ github.repository }}/releases/download/sysroot-v2"
           mkdir -p "$PREFIX"
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
             "$SYSROOT_URL/sysroot-${{ matrix.target }}.tar.gz" | tar xz -C "$PREFIX"
@@ -115,6 +115,7 @@ jobs:
           FLAGS=(
             --disable-everything
             --enable-libass
+            --enable-libtesseract
             --enable-static
             --disable-shared
             --enable-small
@@ -282,20 +283,34 @@ jobs:
           path: artifacts
           merge-multiple: false
 
+      - name: Download tessdata (eng)
+        run: |
+          TESSDATA_URL="https://github.com/${{ github.repository }}/releases/download/tessdata-v1"
+          mkdir -p tessdata-eng
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
+            -o tessdata-eng/eng.traineddata "$TESSDATA_URL/eng.traineddata" &
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
+            -o tessdata-eng/osd.traineddata "$TESSDATA_URL/osd.traineddata" &
+          wait
+
       - name: Package
         run: |
-          cd artifacts
-          for dir in */; do
-            target="${dir%/}"
-            cd "$dir"
+          for dir in artifacts/ffmpeg-*/; do
+            target=$(basename "$dir")
+
+            # -eng bundle: binaries + eng tessdata
+            mkdir -p "pkg-${target}-eng/tessdata"
+            cp "$dir"/* "pkg-${target}-eng/"
+            cp tessdata-eng/* "pkg-${target}-eng/tessdata/"
+
             if [[ "$target" == *windows* ]]; then
-              zip "../../ffmpeg-${target}.zip" *
+              (cd "pkg-${target}-eng" && zip "../ffmpeg-${target}-eng.zip" -r .)
+              (cd "$dir" && zip "../../ffmpeg-${target}.zip" *)
             else
-              tar czf "../../ffmpeg-${target}.tar.gz" *
+              tar czf "ffmpeg-${target}-eng.tar.gz" -C "pkg-${target}-eng" .
+              tar czf "ffmpeg-${target}.tar.gz" -C "$dir" .
             fi
-            cd ..
           done
-          cd ..
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2

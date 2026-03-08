@@ -5,7 +5,7 @@ on:
     inputs:
       release_tag:
         description: 'Sysroot release tag to create/update'
-        default: 'sysroot-v1'
+        default: 'sysroot-v2'
 
 jobs:
   build:
@@ -53,12 +53,12 @@ jobs:
         if: matrix.os == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config cmake meson ninja-build autoconf automake libtool
+          sudo apt-get install -y nasm pkg-config cmake meson ninja-build autoconf automake libtool
 
       - name: Install macOS dependencies
         if: matrix.os == 'macos'
         run: |
-          brew install pkg-config ninja meson autoconf automake libtool coreutils
+          brew install pkg-config nasm ninja meson autoconf automake libtool coreutils
 
       - name: Install llvm-mingw
         if: matrix.llvm_mingw
@@ -170,6 +170,10 @@ jobs:
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o gr2.tar.gz    "$DEPS_URL/graphite2-1.3.14.tar.gz" &
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o icu.tgz       "$DEPS_URL/icu4c-78.2-sources.tgz" &
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o hb.tar.xz      "$DEPS_URL/harfbuzz-10.2.0.tar.xz" &
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o jpegturbo.tar.gz "$DEPS_URL/libjpeg-turbo-3.1.0.tar.gz" &
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o tiff.tar.xz    "$DEPS_URL/tiff-4.7.0.tar.xz" &
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o lept.tar.gz    "$DEPS_URL/leptonica-1.87.0.tar.gz" &
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o tess.tar.gz    "$DEPS_URL/tesseract-5.5.2.tar.gz" &
           wait
           tar xf zlib.tar.gz
           tar xf libpng.tar.gz
@@ -178,6 +182,10 @@ jobs:
           tar xf gr2.tar.gz
           tar xf icu.tgz
           tar xf hb.tar.xz
+          tar xf jpegturbo.tar.gz
+          tar xf tiff.tar.xz
+          tar xf lept.tar.gz
+          tar xf tess.tar.gz
 
           # ── zlib ──────────────────────────────────────────────────────────
           cd zlib-1.3.1
@@ -196,6 +204,33 @@ jobs:
             -DPNG_TOOLS=OFF \
             -GNinja
           ninja -C png-build install
+
+          # ── libjpeg-turbo (needed by libtiff and Leptonica) ────────────
+          cmake -S libjpeg-turbo-3.1.0 -B jpegturbo-build \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DENABLE_SHARED=OFF \
+            -DWITH_TURBOJPEG=OFF \
+            -GNinja
+          ninja -C jpegturbo-build install
+
+          # ── libtiff (needed by Leptonica) ───────────────────────────────
+          cmake -S tiff-4.7.0 -B tiff-build \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            -Dtiff-tools=OFF \
+            -Dtiff-tests=OFF \
+            -Dtiff-contrib=OFF \
+            -Dtiff-docs=OFF \
+            -Djbig=OFF \
+            -Dlzma=OFF \
+            -Dzstd=OFF \
+            -Dwebp=OFF \
+            -Dlerc=OFF \
+            -GNinja
+          ninja -C tiff-build install
 
           # ── freetype2 (pass 1: with zlib+png, without harfbuzz) ──────────
           cmake -S freetype-VER-2-13-3 -B ft-build \
@@ -329,6 +364,34 @@ jobs:
           make -j$(nproc) install
           cd ..
 
+          # ── Leptonica (image processing library for Tesseract) ──────────
+          cmake -S leptonica-1.87.0 -B lept-build \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DENABLE_GIF=OFF \
+            -DENABLE_WEBP=OFF \
+            -DENABLE_OPENJPEG=OFF \
+            -DSW_BUILD=OFF \
+            -DBUILD_PROG=OFF \
+            -GNinja
+          ninja -C lept-build install
+
+          # ── Tesseract (OCR engine) ──────────────────────────────────────
+          cmake -S tesseract-5.5.2 -B tess-build \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DSW_BUILD=OFF \
+            -DBUILD_TRAINING_TOOLS=OFF \
+            -DDISABLE_ARCHIVE=ON \
+            -DDISABLE_CURL=ON \
+            -DOPENMP_BUILD=OFF \
+            -DGRAPHICS_DISABLED=ON \
+            -DDISABLED_LEGACY_ENGINE=ON \
+            -GNinja
+          ninja -C tess-build install
+
       - name: Package sysroot
         env:
           PREFIX: ${{ github.workspace }}/sysroot
@@ -363,7 +426,7 @@ jobs:
               --title "Pre-built sysroots ($TAG)" \
               --notes "Pre-built static dependency sysroots for FFmpeg CI.
 
-          Contains: zlib, libpng, freetype2, fribidi, graphite2, ICU, harfbuzz, libass.
+          Contains: zlib, libpng, libjpeg-turbo, libtiff, freetype2, fribidi, graphite2, ICU, harfbuzz, libass, leptonica, tesseract.
           Run the Build Dependencies workflow to regenerate."
 
           # Delete existing assets, then upload fresh ones

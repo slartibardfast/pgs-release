@@ -398,6 +398,7 @@ ffmpeg -i movie.mkv -map 0:s:0 -c:s srt -sub_ocr_lang jpn output.srt
 ffmpeg -i movie.mkv -map 0:s:0 -c:s ass output.ass</pre>
   </div>
   <p>Bitmap deduplication skips OCR on palette-only changes (PGS fade sequences). PSM fallback handles RTL and complex scripts. Per-language <code>preserve_interword_spaces</code> tuning prevents word merging in Arabic, Hebrew, and Persian.</p>
+  <p>The <code>-eng</code> release bundle includes English tessdata. Additional languages available from the <a href="https://github.com/slartibardfast/pgs-release/releases/tag/tessdata-v1">tessdata release</a>.</p>
 </section>
 
 <section>
