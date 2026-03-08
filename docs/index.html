@@ -257,7 +257,7 @@ footer a { color: var(--fg2); }
   <h1>Subtitle Format Conversion for FFmpeg</h1>
   <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception. Converting between text (SRT, ASS, WebVTT) and bitmap (PGS, DVB, DVD, XSUB) formats has been broken for over a decade.</p>
   <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
-  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. This repository contains 21 patches that fix it &mdash; in both directions. Text to bitmap (16 text decoders &times; 4 bitmap encoders = 64 pairs) and bitmap to text (4 bitmap decoders &times; 6 text encoders = 24 pairs).</p>
+  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. This repository contains 21 patches that fix it &mdash; in both directions. 64 bitmap encoders (16 text decoders &times; 4 bitmap encoders) and 24 text encoders (4 bitmap decoders &times; 6 text encoders).</p>
   <div class="stats">
     <div><span class="stat-num">21</span><span class="stat-label">Patches</span></div>
     <div><span class="stat-num">9</span><span class="stat-label">Tests</span></div>
