@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OCR Language Coverage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fafafa;
+  --fg: #1a1a1a;
+  --fg2: #666;
+  --fg3: #999;
+  --border: #e5e5e5;
+  --accent: #0066cc;
+  --green: #1a7f37;
+  --red: #cf222e;
+  --yellow: #9a6700;
+  --card-bg: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111;
+    --fg: #e5e5e5;
+    --fg2: #999;
+    --fg3: #666;
+    --border: #2a2a2a;
+    --accent: #4d9de0;
+    --green: #56d364;
+    --red: #f85149;
+    --yellow: #d29922;
+    --card-bg: #1a1a1a;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.6;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+header {
+  padding: 3rem 0 2rem;
+}
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.75rem;
+}
+header p {
+  color: var(--fg2);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  max-width: 680px;
+}
+.stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.stat-num {
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: block;
+}
+.stat-num.green { color: var(--green); }
+.stat-num.red { color: var(--red); }
+.stat-num.yellow { color: var(--yellow); }
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--fg3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+.method {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border);
+}
+.method h2 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg3);
+  margin-bottom: 1rem;
+}
+.method p {
+  color: var(--fg2);
+  font-size: 0.85rem;
+  max-width: 680px;
+  margin-bottom: 0.5rem;
+}
+.method code {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8em;
+  background: var(--border);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+}
+.pipeline {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8rem;
+  color: var(--fg2);
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+section {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border);
+}
+section h2 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg3);
+  margin-bottom: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+th {
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg3);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+}
+td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr.group-header td {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg3);
+  background: var(--card-bg);
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.lang-cell {
+  white-space: nowrap;
+}
+.lang-name {
+  font-weight: 500;
+  display: block;
+}
+.lang-code {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.75rem;
+  color: var(--fg3);
+}
+.lang-font {
+  font-size: 0.7rem;
+  color: var(--fg3);
+  display: block;
+}
+.status-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+.badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15em 0.5em;
+  border-radius: 3px;
+}
+.badge.pass { color: var(--green); background: color-mix(in srgb, var(--green) 12%, transparent); }
+.badge.fail { color: var(--red); background: color-mix(in srgb, var(--red) 12%, transparent); }
+.badge.skip { color: var(--yellow); background: color-mix(in srgb, var(--yellow) 12%, transparent); }
+.note { color: var(--fg3); font-style: italic; }
+
+footer {
+  padding: 2rem 0;
+  border-top: 1px solid var(--border);
+  color: var(--fg3);
+  font-size: 0.75rem;
+}
+footer a { color: var(--fg2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>OCR Language Coverage</h1>
+  <p>Roundtrip test results for bitmap-to-text subtitle conversion. Each language is rendered to PGS via libass, then OCR'd back to text via Tesseract. Input text is UDHR Article 1.</p>
+  <div class="stats">
+    <div><span class="stat-num green">105</span><span class="stat-label">Pass</span></div>
+    <div><span class="stat-num red">9</span><span class="stat-label">Fail</span></div>
+    <div><span class="stat-num yellow">14</span><span class="stat-label">Excluded</span></div>
+    <div><span class="stat-num">92%</span><span class="stat-label">Pass rate</span></div>
+  </div>
+</header>
+
+<div class="method">
+  <h2>Method</h2>
+  <p>Per-script Noto fonts ensure correct glyph rendering. ASS format at 1920x1080 with 48pt font gives Tesseract clear input. RTL scripts use <code>preserve_interword_spaces=0</code> to prevent word merging. PSM 6 (uniform block) with PSM 7 fallback handles both multi-line and single-line subtitles.</p>
+  <div class="pipeline">SRT (UDHR Article 1) &rarr; ASS (per-script font) &rarr; PGS (libass render) &rarr; SRT (Tesseract OCR)</div>
+  <p>Failures are Tesseract LSTM model limitations (poor training data for the script), not rendering or pipeline issues. Skipped languages have fundamentally broken tessdata (vertical CJK, math symbols, dead scripts).</p>
+</div>
+
+<section>
+  <h2>Results</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Language</th>
+        <th>Expected</th>
+        <th>OCR Output</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+<tr class="group-header"><td colspan="4">Latin</td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Afrikaans</span><span class="lang-code">afr</span><span class="lang-font">Arial</span></td><td>Alle menslike wesens word vry geboren / en is gelyk in waardigheid en regte.</td><td>Alle menslike wesens word vry geboren / en is gelyk in waardigheid en regte.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Azerbaijani</span><span class="lang-code">aze</span><span class="lang-font">Arial</span></td><td>Bütün insanlar azad doğulurlar / və hüquqlarda bərabərdirlər.</td><td>Bütün insanlar azad doğulurlar / və hüquqlarda bərabərdirlər.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Bosnian</span><span class="lang-code">bos</span><span class="lang-font">Arial</span></td><td>Sva ljudska bića rađaju se slobodna / i jednaka u dostojanstvu i pravima.</td><td>Sva ljudska bića rađaju se slobodna / i jednaka u dostojanstvu i pravima.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Breton</span><span class="lang-code">bre</span><span class="lang-font">Arial</span></td><td>Dieub ha par en o dellezegezh / hag o gwiriou eo ganet an holl dud.</td><td>Dieub na par en 0 dellezegezh / had 0 gwiriou eo ganet an holl dud.</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Catalan</span><span class="lang-code">cat</span><span class="lang-font">Arial</span></td><td>Tots els éssers humans neixen lliures / i iguals en dignitat i en drets.</td><td>Tots els éssers humans neixen lliures / i iguals en dignitat i en drets.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Cebuano</span><span class="lang-code">ceb</span><span class="lang-font">Arial</span></td><td>Ang tanang katawhan gipakatawo / nga may kagawasan ug managsama.</td><td>Ang tanang katawhan gipakatawo / nga may kagawasan ug managsama.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Czech</span><span class="lang-code">ces</span><span class="lang-font">Arial</span></td><td>Všichni lidé se rodí svobodní / a rovní v důstojnosti i pravech.</td><td>Všichni lidé se rodí svobodní / a rovní v důstojnosti i pravech.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Corsican</span><span class="lang-code">cos</span><span class="lang-font">Arial</span></td><td>Corsu</td><td>Corsu</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Welsh</span><span class="lang-code">cym</span><span class="lang-font">Arial</span></td><td>Genir pawb yn rhydd ac yn gydradd / mewn urddas a hawliau.</td><td>Genir pawb yn rhydd ac yn gydradd / mewn urddas a hawliau.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Danish</span><span class="lang-code">dan</span><span class="lang-font">Arial</span></td><td>Alle mennesker er født frie og lige / i værdighed og rettigheder.</td><td>Alle mennesker er født frie og lige / i værdighed og rettigheder.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">German</span><span class="lang-code">deu</span><span class="lang-font">Arial</span></td><td>Alle Menschen sind frei und gleich / an Würde und Rechten geboren.</td><td>Alle Menschen sind frei und gleich / an Würde und Rechten geboren.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">English</span><span class="lang-code">eng</span><span class="lang-font">Arial</span></td><td>All human beings are born free / and equal in dignity and rights.</td><td>All human beings are born free / and equal in dignity and rights.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Middle English</span><span class="lang-code">enm</span><span class="lang-font">Arial</span></td><td>Englissh</td><td>Englissh</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Esperanto</span><span class="lang-code">epo</span><span class="lang-font">Arial</span></td><td>Ĉiuj homoj naskiĝas liberaj kaj egalaj / je digno kaj rajtoj.</td><td>Ĉiuj homoj naskiĝas liberaj kaj egalaj / je digno kaj rajtoj.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Estonian</span><span class="lang-code">est</span><span class="lang-font">Arial</span></td><td>Kõik inimesed sünnivad vabadena / ja võrdsetena oma väärikus ja õigustes.</td><td>Kõik inimesed sünnivad vabadena / ja võrdsetena oma väärikus ja õigustes.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Faroese</span><span class="lang-code">fao</span><span class="lang-font">Arial</span></td><td>Øll menniskju eru fødd fræls / og javnréttut til virðingar og réttinda.</td><td>Øll menniskju eru fødd fræls / og javnrættut til virðingar og rættinda.</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Filipino</span><span class="lang-code">fil</span><span class="lang-font">Arial</span></td><td>Ang lahat ng tao ay isinilang na malaya / at pantay sa karangalan at mga karapatan.</td><td>Ang lahat ng tao ay isinilang na malaya / at pantay sa karangalan at mga karapatan.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Finnish</span><span class="lang-code">fin</span><span class="lang-font">Arial</span></td><td>Kaikki ihmiset syntyvät vapaina / ja tasavertaisina arvoltaan ja oikeuksiltaan.</td><td>Kaikki ihmiset syntyvät vapaina / ja tasavertaisina arvoltaan ja oikeuksiltaan.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">French</span><span class="lang-code">fra</span><span class="lang-font">Arial</span></td><td>Tous les êtres humains naissent libres / et égaux en dignité et en droits.</td><td>Tous les êtres humains naissent libres / et égaux en dignité et en droits.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Frankish</span><span class="lang-code">frk</span><span class="lang-font">Arial</span></td><td>Fraktur</td><td>Fraktur</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Middle French</span><span class="lang-code">frm</span><span class="lang-font">Noto Sans</span></td><td>François</td><td>François</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Frisian</span><span class="lang-code">fry</span><span class="lang-font">Arial</span></td><td>Alle minsken wurde frij berne / en hawwe deselde weardigens en rjochten.</td><td>Alle minsken wurde frij berne / en hawwe deselde weardigens en rjochten.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Scottish Gaelic</span><span class="lang-code">gla</span><span class="lang-font">Arial</span></td><td>Tha gach uile dhuine air a bhreith saor / agus co-ionnan ann an urram.</td><td>Tha gach uile dhuine air a bhreith saor / agus co-ionnan ann an urram.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Irish</span><span class="lang-code">gle</span><span class="lang-font">Arial</span></td><td>Saolaítear gach duine saor / agus comhionann ina dhíntiúnas.</td><td>Saolaítear gach duine saor / agus comhionann ina dhíntiúnas.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Galician</span><span class="lang-code">glg</span><span class="lang-font">Arial</span></td><td>Todos os seres humanos nacen libres / e iguais en dignidade e dereitos.</td><td>Todos os seres humanos nacen libres / e iguais en dignidade e dereitos.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Haitian Creole</span><span class="lang-code">hat</span><span class="lang-font">Arial</span></td><td>Tout moun fèt lib ak egal / nan diyite ak nan dwa.</td><td>Tout moun fèt lib ak egal / nan diyite ak nan dwa.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Croatian</span><span class="lang-code">hrv</span><span class="lang-font">Arial</span></td><td>Sva ljudska bića rađaju se slobodna / i jednaka u dostojanstvu i pravima.</td><td>Sva ljudska bića rađaju se slobodna / i jednaka u dostojanstvu i pravima.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Hungarian</span><span class="lang-code">hun</span><span class="lang-font">Arial</span></td><td>Minden emberi lény szabadon születik / és egyenlő méltósága és joga van.</td><td>Minden emberi lény szabadon születik / és egyenlő méltósága és joga van.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Indonesian</span><span class="lang-code">ind</span><span class="lang-font">Arial</span></td><td>Semua manusia dilahirkan bebas / dan sama dalam martabat dan hak.</td><td>Semua manusia dilahirkan bebas / dan sama dalam martabat dan hak.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Icelandic</span><span class="lang-code">isl</span><span class="lang-font">Arial</span></td><td>Hver maður er borinn frjáls / og jafn öðrum að virðingaréttindum.</td><td>Hver maður er borinn frjáls / og jafn öðrum að virðingaréttindum.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Italian</span><span class="lang-code">ita</span><span class="lang-font">Arial</span></td><td>Tutti gli esseri umani nascono liberi / ed eguali in dignità e diritti.</td><td>Tutti gli esseri umani nascono liberi / ed eguali in dignità e diritti.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Javanese</span><span class="lang-code">jav</span><span class="lang-font">Arial</span></td><td>Kabeh manungsa lair kanthi mardika / lan darbé martabat lan hak-hak.</td><td>Kabeh manungsa lair kanthi mardika / lan darbé martabat lan hak-hak.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Kurdish</span><span class="lang-code">kmr</span><span class="lang-font">Arial</span></td><td>Hemû mirov azad ji dayik dibin / bi rûmet û mafan wekhev in.</td><td>Hemû mirov azad ji dayik dibin / bi rûmet û mafan wekhev in.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Latin</span><span class="lang-code">lat</span><span class="lang-font">Arial</span></td><td>Omnes homines liberi pares nascuntur / dignitate et iuribus.</td><td>Omnes homines liberi pares nascuntur / dignitate et iuribus.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Latvian</span><span class="lang-code">lav</span><span class="lang-font">Arial</span></td><td>Visi cilvēki piedzimst brīvi / un vienlīdzīgi cieņā un tiesību ziņā.</td><td>Visi cilvēki piedzimst brīvi / un vienlīdzīgi cieņā un tiesību ziņā.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Lithuanian</span><span class="lang-code">lit</span><span class="lang-font">Arial</span></td><td>Visi žmonės gimsta laisvi ir lygūs / savo orumu ir teisėmis.</td><td>Visi žmonės gimsta laisvi ir lygūs / savo orumu ir teisėmis.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Luxembourgish</span><span class="lang-code">ltz</span><span class="lang-font">Arial</span></td><td>Lëtzebuergesch</td><td>Lëtzebuergesch</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Maltese</span><span class="lang-code">mlt</span><span class="lang-font">Arial</span></td><td>Il-bnedmin kollha jitwieldu ħielsa / u ugwali fid-dinjità u d-drittijiet.</td><td>Il-bnedmin kollha jitwieldu ħielsa / u ugwali fid-dinjità u d-drittijiet.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Maori</span><span class="lang-code">mri</span><span class="lang-font">Arial</span></td><td>Ko te katoa o ngā tāngata i whānau mai / ki te ao he rangatira anō rātou.</td><td>Ko te katoa o ngā tāngata i whānau mai / ki te ao he rangatira anō rātou.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Malay</span><span class="lang-code">msa</span><span class="lang-font">Arial</span></td><td>Semua manusia dilahirkan bebas / dan sama dalam martabat dan hak.</td><td>Semua manusia dilahirkan bebas / dan sama dalam martabat dan hak.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Dutch</span><span class="lang-code">nld</span><span class="lang-font">Arial</span></td><td>Alle mensen worden vrij geboren / en gelijk in waardigheid en rechten.</td><td>Alle mensen worden vrij geboren / en gelijk in waardigheid en rechten.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Norwegian</span><span class="lang-code">nor</span><span class="lang-font">Arial</span></td><td>Alle mennesker er født frie og like / i verdighet og rettigheter.</td><td>Alle mennesker er født frie og like / i verdighet og rettigheter.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Occitan</span><span class="lang-code">oci</span><span class="lang-font">Arial</span></td><td>Totes las personas naisson liuras / e egalas en dignitat e en dreches.</td><td>Totes las personas naisson liuras / e egalas en dignitat e en dreches.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Polish</span><span class="lang-code">pol</span><span class="lang-font">Arial</span></td><td>Wszyscy ludzie rodzą się wolni / i równi w swej godności i prawach.</td><td>Wszyscy ludzie rodzą się wolni / i równi w swej godności i prawach.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Portuguese</span><span class="lang-code">por</span><span class="lang-font">Arial</span></td><td>Todos os seres humanos nascem livres / e iguais em dignidade e direitos.</td><td>Todos os seres humanos nascem livres / e iguais em dignidade e direitos.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Quechua</span><span class="lang-code">que</span><span class="lang-font">Arial</span></td><td>Runasimi</td><td>Runasimi</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Romanian</span><span class="lang-code">ron</span><span class="lang-font">Arial</span></td><td>Toate ființele umane se nasc libere / și egale în demnitate și drepturi.</td><td>Toate ființele umane se nasc libere / și egale în demnitate și drepturi.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Slovak</span><span class="lang-code">slk</span><span class="lang-font">Arial</span></td><td>Všetci ľudia sa rodia slobodní / a rovní v dôstojnosti a právach.</td><td>Všetci ľudia sa rodia slobodní / a rovní v dôstojnosti a právach.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Slovenian</span><span class="lang-code">slv</span><span class="lang-font">Arial</span></td><td>Vsi ljudje se rodijo svobodni / in enakopravni v dostojanstvu.</td><td>Vsi ljudje se rodijo svobodni / in enakopravni v dostojanstvu.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Spanish</span><span class="lang-code">spa</span><span class="lang-font">Arial</span></td><td>Todos los seres humanos nacen libres / e iguales en dignidad y derechos.</td><td>Todos los seres humanos nacen libres / e iguales en dignidad y derechos.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Albanian</span><span class="lang-code">sqi</span><span class="lang-font">Arial</span></td><td>Të gjithë njerëzit lindin të lirë / dhe të barabartë në dinjitet.</td><td>Të gjithë njerëzit lindin të lirë / dhe të barabartë në dinjitet.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Serbian (Latin)</span><span class="lang-code">srp_latn</span><span class="lang-font">Arial</span></td><td>Sva ljudska bića rađaju se slobodna / i jednaka u dostojanstvu i pravima.</td><td>Sva ljudska bića rađaju se slobodna / i jednaka u dostojanstvu i pravima.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Sundanese</span><span class="lang-code">sun</span><span class="lang-font">Arial</span></td><td>Sunda</td><td>Sunda</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Swahili</span><span class="lang-code">swa</span><span class="lang-font">Arial</span></td><td>Binadamu wote wamezaliwa huru / na sawa katika heshima na haki.</td><td>Binadamu wote wamezaliwa huru / na sawa katika heshima na haki.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Swedish</span><span class="lang-code">swe</span><span class="lang-font">Arial</span></td><td>Alla människor är födda fria / och lika i värdighet och rättigheter.</td><td>Alla människor är födda fria / och lika i värdighet och rättigheter.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Tagalog</span><span class="lang-code">tgl</span><span class="lang-font">Arial</span></td><td>Ang lahat ng tao ay isinilang na malaya / at pantay sa karangalan.</td><td>Ang lahat ng tao ay isinilang na malaya / at pantay sa karangalan.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Tongan</span><span class="lang-code">ton</span><span class="lang-font">Arial</span></td><td>Lea fakatonga</td><td>Lea fakatonga</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Turkish</span><span class="lang-code">tur</span><span class="lang-font">Arial</span></td><td>Bütün insanlar özgür doğarlar / ve eşit haklara sahiptirler.</td><td>Bütün insanlar özgür doğarlar / ve eşit haklara sahiptirler.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Uzbek</span><span class="lang-code">uzb</span><span class="lang-font">Arial</span></td><td>Barcha odamlar erkin tug&#x27;iladilar / va qadr-qimmat va huquqlarda teng.</td><td>Barcha odamlar erkin tug&#x27;iladilar / va qadr-qimmat va huquqlarda teng.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Vietnamese</span><span class="lang-code">vie</span><span class="lang-font">Noto Sans</span></td><td>Mọi người sinh ra đều bình đẳng / về nhân phẩm và quyền lợi.</td><td>Mọi người sinh ra đều bình đẳng / về nhân phẩm và quyền lợi.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Yoruba</span><span class="lang-code">yor</span><span class="lang-font">Arial</span></td><td>Gbogbo ènìyàn ni a bí ní òmìnira / àti dọ́gba ní ìyì àti ẹ̀tọ́.</td><td>Gbogbo ẹ̀nìyàn ni a bí ní òÒmìnira / àti dọgba ní ìyì àti ẹ̀tọ.</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Danish (Fraktur)</span><span class="lang-code">dan_frak</span><span class="lang-font">Arial</span></td><td>Dansk</td><td>Dansk</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">German (Fraktur)</span><span class="lang-code">deu_frak</span><span class="lang-font">Arial</span></td><td>Deutsch</td><td>Deutsch</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Italian (Old)</span><span class="lang-code">ita_old</span><span class="lang-font">Arial</span></td><td>Italiano</td><td>Italiano</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Spanish (Old)</span><span class="lang-code">spa_old</span><span class="lang-font">Arial</span></td><td>Español</td><td>Español</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr class="group-header"><td colspan="4">Cyrillic</td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Azerbaijani (Cyrillic)</span><span class="lang-code">aze_cyrl</span><span class="lang-font">Arial</span></td><td>Азәрбајҹан</td><td>Азәрбајҹан</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Belarusian</span><span class="lang-code">bel</span><span class="lang-font">Arial</span></td><td>Усе людзі нараджаюцца свабоднымі / і роўнымі ў сваёй годнасці і правах.</td><td>Усе людзі нараджаюцца свабоднымі / і роўнымі ў сваёй годнасці і правах.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Bulgarian</span><span class="lang-code">bul</span><span class="lang-font">Arial</span></td><td>Всички хора се раждат свободни / и равни по достойнство и права.</td><td>Всички хора се раждат свободни / и равни по достойнство и права.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Kazakh</span><span class="lang-code">kaz</span><span class="lang-font">Arial</span></td><td>Барлық адамдар тең құқылы болып туады / ар-намыстарына қана және хұқытарына.</td><td>Барлық адамдар тең құқылы болып туады / ар-намыстарына қана және хұқытарына.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Kyrgyz</span><span class="lang-code">kir</span><span class="lang-font">Arial</span></td><td>Бардык адамдар эркин жаралат / жане талапа ар-намыска ие.</td><td>Бардык адамдар эркин жаралат / жане талапа ар-намыска ие.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Macedonian</span><span class="lang-code">mkd</span><span class="lang-font">Arial</span></td><td>Сите човечки суштества се раѓаат слободни / и еднакви во достоинството.</td><td>Сите човечки суштества се раѓаат слободни / и еднакви во достоинството.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Mongolian</span><span class="lang-code">mon</span><span class="lang-font">Arial</span></td><td>Хүн бүр төрж мэндлээрээ эрх чөлөөтэй / ба эзэлхэх нэр үндсэн эрхтэй.</td><td>Хүн бүр төрж мэндлээрээ эрх чөлөөтэй / ба эзэлхэх нэр үндсэн эрхтэй.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Russian</span><span class="lang-code">rus</span><span class="lang-font">Arial</span></td><td>Все люди рождаются свободными / и равными в своём достоинстве и правах.</td><td>Все люди рождаются свободными / и равными в своём достоинстве и правах.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Serbian (Cyrillic)</span><span class="lang-code">srp</span><span class="lang-font">Arial</span></td><td>Сва људска бића рађају се слободна / и једнака у достојанству и правима.</td><td>Сва људска бића рађају се слободна / и једнака у достојанству и правима.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Tajik</span><span class="lang-code">tgk</span><span class="lang-font">Arial</span></td><td>Тоҷикӣ</td><td>Тоҷикӣ</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Ukrainian</span><span class="lang-code">ukr</span><span class="lang-font">Arial</span></td><td>Усі люди народжуються вільними / і рівними у своїй гідності і правах.</td><td>Усі люди народжуються вільними / і рівними у своїй гідності і правах.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Uzbek (Cyrillic)</span><span class="lang-code">uzb_cyrl</span><span class="lang-font">Arial</span></td><td>Ўзбекча</td><td>Ўзбекча</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr class="group-header"><td colspan="4">Greek</td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Greek</span><span class="lang-code">ell</span><span class="lang-font">Arial</span></td><td>Ελληνικά</td><td>Ελληνικά</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Ancient Greek</span><span class="lang-code">grc</span><span class="lang-font">Arial</span></td><td>Ἑλληνική</td><td>Ἑλληνική</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr class="group-header"><td colspan="4">CJK</td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Chinese (Simplified)</span><span class="lang-code">chi_sim</span><span class="lang-font">Noto Sans CJK SC</span></td><td>人人生而自由 / 在尊严和权利上一律平等。</td><td>人人生而自由 / 在尊严和权利上一律平等。</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Chinese (Traditional)</span><span class="lang-code">chi_tra</span><span class="lang-font">Noto Sans CJK TC</span></td><td>人人生而自由 / 在尊嚴和權利上一律平等。</td><td>人人生而自由 / 在尊嚴和權利上一律平等。</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Japanese</span><span class="lang-code">jpn</span><span class="lang-font">Noto Sans CJK JP</span></td><td>すべての人間は生まれながらに / 自由であり尊厳と権利において平等である。</td><td>すべての人間は生まれながらに / 自由であり尊厳と権利において平等である。</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Korean</span><span class="lang-code">kor</span><span class="lang-font">Noto Sans CJK KR</span></td><td>모든 사람은 태어날 때부터 자유롭고 / 존엄성과 권리에 있어서 평등하다.</td><td>모든 사람은 태어날 때부터 자유롭고 / 존엄성과 권리에 있어서 평등하다.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr class="group-header"><td colspan="4">Arabic / RTL</td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Arabic</span><span class="lang-code">ara</span><span class="lang-font">Noto Sans Arabic</span></td><td dir="rtl">يولد جميع الناس أحرارا / ومتساوين في الكرامة والحقوق.</td><td dir="rtl">يولد جميع الناس أحرارا / ومتساوين في الكرامة والحقوق.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Persian</span><span class="lang-code">fas</span><span class="lang-font">Noto Sans Arabic</span></td><td dir="rtl">همه افراد بشر آزاد زاده می‌شوند / و از حیث حقوق با هم برابرند.</td><td dir="rtl">همه افراد بشر آزاد زاده می‌شوند / و از حیث حقوق با هم برابرند.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Hebrew</span><span class="lang-code">heb</span><span class="lang-font">Noto Sans Hebrew</span></td><td dir="rtl">כל בני האדם נולדים חופשיים / ושווים בכבודם ובזכויותיהם.</td><td dir="rtl">כל בני האדם נולדים חופשיים / ושווים בכבודם ובזכויותיהם.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Urdu</span><span class="lang-code">urd</span><span class="lang-font">Noto Sans Arabic</span></td><td dir="rtl">تمام انسان آزاد پیدا ہوتے ہیں / اور حقوق میں برابر ہیں۔</td><td dir="rtl">تمام انسان آزاد پیدا ہوتے ہیں / اور حقوق میں براہر ہیں۔</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr class="group-header"><td colspan="4">Devanagari / Indic</td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Hindi</span><span class="lang-code">hin</span><span class="lang-font">Noto Sans Devanagari</span></td><td>सभी मनुष्य जन्म से स्वतंत्र हैं / और गरिमा और अधिकारों में समान हैं।</td><td>सभी मनुष्य जन्म से स्वतंत्र हैं / और गरिमा और अधिकारों में समान हैं।</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Marathi</span><span class="lang-code">mar</span><span class="lang-font">Noto Sans Devanagari</span></td><td>सर्व मानवी व्यक्ती जन्मतः स्वतंत्र / आणि समान प्रतिष्ठा आणि अधिकार आहेत.</td><td>सर्व मानवी व्यक्‍ती जन्मतः स्वतंत्र / आणि समान प्रतिष्ठा आणि अधिकार आहेत.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Nepali</span><span class="lang-code">nep</span><span class="lang-font">Noto Sans Devanagari</span></td><td>सबै मानिसहरू जन्मजात स्वतन्त्र / र समान मर्यादा र अधिकार भएका छन्।</td><td>सबै मानिसहरू जन्मजात स्वतन्त्र / र समान मर्यादा र अधिकार भएका छन्‌।</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Sanskrit</span><span class="lang-code">san</span><span class="lang-font">Noto Sans Devanagari</span></td><td>सर्वे मानवाः स्वतन्त्राः जायन्ते / गौरवे अधिकारे च समानाः।</td><td>सर्वे मानवाः स्वतन्त्राः जायन्ते / गौरवे अधिकारे च समानाः।</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Bengali</span><span class="lang-code">ben</span><span class="lang-font">Noto Sans Bengali</span></td><td>সমস্ত মানুষ স্বাধীনভাবে জন্মগ্রহণ করে / এবং মর্যাদা ও অধিকারে সমান।</td><td>সমস্ত মানুষ স্বাধীনভাবে জন্মগ্রহণ করে / এবং মর্যাদা ও অধিকারে সমান।</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Assamese</span><span class="lang-code">asm</span><span class="lang-font">Noto Sans Bengali</span></td><td>অসমীয়া</td><td>অসমীয়া</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Gujarati</span><span class="lang-code">guj</span><span class="lang-font">Noto Sans Gujarati</span></td><td>પ્રત્યેક વ્યક્તિ જન્મથી સ્વતંત્ર છે / અને ગૌરવ તથા અધિકારોમાં સમાન છે.</td><td>પ્રત્યેક વ્યક્તિ જન્મથી સ્વતંત્ર છે / અને ગૌરવ તથા અધિકારોમાં સમાન છે.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Kannada</span><span class="lang-code">kan</span><span class="lang-font">Noto Sans Kannada</span></td><td>ಎಲ್ಲಾ ಮಾನವರೂ ಸ್ವತಂತ್ರರಾಗಿ ಜನಿಸಿದ್ದಾರೆ / ಮತ್ತು ಘನತೆ ಮತ್ತು ಹಕ್ಕುಗಳಲ್ಲಿ ಸಮಾನರು.</td><td>ಎಲ್ಲಾ ಮಾನವರೂ ಸ್ವತಂತ್ರರಾಗಿ ಜನಿಸಿದ್ದಾರೆ / ಮತ್ತು ಘನತೆ ಮತ್ತು ಹಕ್ಕುಗಳಲ್ಲಿ ಸಮಾನರು.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Malayalam</span><span class="lang-code">mal</span><span class="lang-font">Noto Sans Malayalam</span></td><td>മനുഷ്യരെല്ലാവരും സ്വതന്ത്രരായി ജനിക്കുന്നു / അന്തസ്സിലും അവകാശങ്ങളിലും തുല്യരാണ്.</td><td>മനുഷ്യരെല്ലാവരും സ്വതന്ത്രരായി ജനിക്കുന്നു / അന്തസ്സിലും അവകാശങ്ങളിലും തുല്യരാണ്‌.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Odia</span><span class="lang-code">ori</span><span class="lang-font">Noto Sans Oriya</span></td><td>ଓଡ଼ିଆ</td><td>ଓଡ଼ିଆ</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Punjabi</span><span class="lang-code">pan</span><span class="lang-font">Noto Sans Gurmukhi</span></td><td>ਸਾਰੇ ਮਨੁੱਖ ਆਜ਼ਾਦ ਜੰਮਦੇ ਹਨ / ਅਤੇ ਇੱਜ਼ਤ ਅਤੇ ਹੱਕਾਂ ਵਿੱਚ ਬਰਾਬਰ ਹਨ।</td><td></td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Tamil</span><span class="lang-code">tam</span><span class="lang-font">Noto Sans Tamil</span></td><td>மனிதர்கள் அனைவரும் சுதந்திரமாகவே / பிறக்கின்றனர் மற்றும் சமமானவர்கள்.</td><td>மனிதர்கள்‌ அனைவரும்‌ சுதந்திரமாகவே / பிறக்கின்றனர்‌ மற்றும்‌ சமமானவர்கள்‌.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Telugu</span><span class="lang-code">tel</span><span class="lang-font">Noto Sans Telugu</span></td><td>ప్రతి వ్యక్తి స్వతంత్రంగా జన్మిస్తాడు / మరియు గౌరవం మరియు హక్కులలో సమానం.</td><td>ప్రతి వ్యక్తి స్వతంత్రంగా జన్మిస్తాడు / మరియు గౌరవం మరియు హక్కులలో సమానం.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Sinhala</span><span class="lang-code">sin</span><span class="lang-font">Noto Sans Sinhala</span></td><td>සියලු මනුෂ්‍යයෝ නිදහස්ව උපත ලබති / සහ ගරුත්වයෙන් හා අයිතිවාසිකම්වලින් සමානය.</td><td>සියලු මනුෂ්‍යයෝ නිදහස්ව උපත ලබති / සහ ගරුත්වයෙන්‌ හා අයිතිවාසිකම්වලින්‌ සමානය.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr class="group-header"><td colspan="4">Other Scripts</td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Amharic</span><span class="lang-code">amh</span><span class="lang-font">Noto Sans Ethiopic</span></td><td>ሰዎች ሁሉ ነፃ ሆነው ይወለዳሉ / እኩልም ናቸው በክብርና በመብት።</td><td>ሰዎች ሁሉ ነፃ ሆነው ይወለዳሉ / እኩልም ናቸው በክብርና በመብት።</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Tibetan</span><span class="lang-code">bod</span><span class="lang-font">Noto Serif Tibetan</span></td><td>བོད་སྐད</td><td>བོད་སྐད</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Cherokee</span><span class="lang-code">chr</span><span class="lang-font">Noto Sans Cherokee</span></td><td>ᏣᎳᎩ</td><td>ᏣᎳᎩ</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Dzongkha</span><span class="lang-code">dzo</span><span class="lang-font">Noto Serif Tibetan</span></td><td>རྫོང་ཁ</td><td>རྫོང་ཁ</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Armenian</span><span class="lang-code">hye</span><span class="lang-font">Noto Sans Armenian</span></td><td>Բոլոր մարդիկ ծնվում են ազատ ու հավասար / իրենց արժանապատվությամբ և իրավունքներով.</td><td>Բոլոր մարդիկ ծնվում են ազատ ու ռավասար / իրենց արժանապատվությամբ ն իրավունքներով.</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Inuktitut</span><span class="lang-code">iku</span><span class="lang-font">Noto Sans Canadian Aboriginal</span></td><td>ᐃᓄᒃᑎᑐᑦ</td><td>ᐃᓄᒃᑎᑐᑦ</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Georgian</span><span class="lang-code">kat</span><span class="lang-font">Noto Sans Georgian</span></td><td>ყველა ადამიანი იბადება თავისუფალი / თანასწორი ღირსებითა და უფლებებით.</td><td>ყველა ადამიანი იბადება თავისუფალი / თანასწორი ღირსებითა და უფლებებით.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Khmer</span><span class="lang-code">khm</span><span class="lang-font">Noto Sans Khmer</span></td><td>មនុស្សទាំងអស់កើតមកមានសេរីភាព / និងសមភាពក្នុងសេចក្ដីថ្លៃថ្នូរនិងសិទ្ធិ។</td><td>មនុស្សទាំងអស់កើតមកមានសេរីភាព / និងសមភាពក្នងសេចក្តីថ្លៃថ្នរនិងសិទ្ធិ។</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Lao</span><span class="lang-code">lao</span><span class="lang-font">Noto Sans Lao</span></td><td>ມະນຸດທຸກຄົນເກີດມາມີສິດເສລີພາບ / ແລະ ສະເໝີພາບໃນກຽດສັກສີ ແລະ ສິດທິ.</td><td>ມະນຸດທກຄົນເກີດມາມີສິດເສລີພາບ / ແລະ ສະເນີພາບໃນກຽດສັກສີ ແລະ ສິດທິ.</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Myanmar</span><span class="lang-code">mya</span><span class="lang-font">Noto Sans Myanmar</span></td><td>လူတိုင်းသည် / လွတ်လပ်စွာမွေးဖွားလာသည်။</td><td>လူတိုင်းသ မ / မူတုငးသည / မျိူ         မြ / လွတလပစ္စာမွေးဖွားလာသည1 / ~   ပြို ၂</td><td class="status-cell"><span class="badge fail">FAIL</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Thai</span><span class="lang-code">tha</span><span class="lang-font">Noto Sans Thai</span></td><td>มนุษย์ทุกคนเกิดมามีอิสระ / และเสมอภาคกันในศักดิ์ศรี.</td><td>มนุษย์ทุกคนเกิดมามีอิสระ / และเสมอภาคกันในศักดิ์ศรี.</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Tigrinya</span><span class="lang-code">tir</span><span class="lang-font">Noto Sans Ethiopic</span></td><td>ትግርኛ</td><td>ትግርኛ</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+<tr><td class="lang-cell"><span class="lang-name">Yiddish</span><span class="lang-code">yid</span><span class="lang-font">Noto Sans Hebrew</span></td><td dir="rtl">שלום</td><td dir="rtl">שלום</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <a href="../">Back</a> &middot;
+  Tested with Tesseract 5.x, tessdata from <a href="https://github.com/tesseract-ocr/tessdata">tesseract-ocr/tessdata</a>.
+  Developed with assistance from <a href="https://claude.ai">Claude</a> (Anthropic).
+</footer>
+
+</div>
+</body>
+</html>

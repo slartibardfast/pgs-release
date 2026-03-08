@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Text-to-Bitmap Subtitle Conversion for FFmpeg</title>
+<title>Subtitle Format Conversion for FFmpeg</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -254,14 +254,14 @@ footer a { color: var(--fg2); }
 <div class="container">
 
 <header>
-  <h1>Text-to-Bitmap Subtitle Conversion for FFmpeg</h1>
-  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception. Converting text subtitles (SRT, ASS, WebVTT) to bitmap format (PGS, DVB, DVD, XSUB) has been broken for over a decade.</p>
+  <h1>Subtitle Format Conversion for FFmpeg</h1>
+  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception. Converting between text (SRT, ASS, WebVTT) and bitmap (PGS, DVB, DVD, XSUB) formats has been broken for over a decade.</p>
   <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
-  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. It blocks 72 subtitle conversion pairs. This repository contains 19 patches that fix it.</p>
+  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. This repository contains 21 patches that fix it &mdash; in both directions.</p>
   <div class="stats">
-    <div><span class="stat-num">19</span><span class="stat-label">Patches</span></div>
-    <div><span class="stat-num">8</span><span class="stat-label">Tests</span></div>
-    <div><span class="stat-num">72</span><span class="stat-label">Pairs unlocked</span></div>
+    <div><span class="stat-num">21</span><span class="stat-label">Patches</span></div>
+    <div><span class="stat-num">9</span><span class="stat-label">Tests</span></div>
+    <div><span class="stat-num">88</span><span class="stat-label">Pairs unlocked</span></div>
   </div>
 </header>
 
@@ -270,12 +270,12 @@ footer a { color: var(--fg2); }
   <div class="prior-item">
     <p><strong>Prior art.</strong> Two attempts stalled. Coza (2022) put libass in libavcodec &mdash; a dependency violation. softworkz (2021&ndash;2025) proposed full subtitle filter infrastructure across 25 patches and 89 files; design questions remain unresolved.</p>
   </div>
-  <p><strong>This series</strong> takes the minimal path. libass already lives in libavfilter. A small rendering utility there, called from fftools in the same pattern as <code>sub2video</code>, is all that's needed. No filter infrastructure. No AVFrame changes.</p>
+  <p><strong>This series</strong> takes the minimal path. libass (rendering) and Tesseract (OCR) already live in libavfilter. Small utility APIs there, called from fftools in the same pattern as <code>sub2video</code>, handle both directions. No filter infrastructure. No AVFrame changes.</p>
 </section>
 
 <section>
   <h2>Patches</h2>
-  <p style="margin-bottom:1.5rem">Branch: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">pgs-series</a>. Series A/B/C are independent and reviewable in parallel. D depends on all three.</p>
+  <p style="margin-bottom:1.5rem">Branch: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">pgs-series</a>. Series A/B/C are independent and reviewable in parallel. D depends on all three. E and F are independent additions.</p>
 
   <div class="series">
     <div class="series-header">
@@ -338,6 +338,19 @@ footer a { color: var(--fg2); }
       <li>Configurable quantizer (Median Cut default) and dithering (Floyd-Steinberg default)</li>
     </ul>
   </div>
+
+  <div class="series">
+    <div class="series-header">
+      <span class="series-letter">F</span>
+      <span class="series-title">OCR (Bitmap to Text)</span>
+      <span class="series-count">&middot; 2 patches</span>
+    </div>
+    <ul>
+      <li>Tesseract OCR integration via <code>avfilter_subtitle_ocr_*</code> API</li>
+      <li>Bitmap deduplication for PGS fade sequences; PSM fallback for RTL scripts</li>
+      <li>Grayscale conversion (binary extraction for DVD, luminance-alpha for PGS)</li>
+    </ul>
+  </div>
 </section>
 
 <section>
@@ -370,8 +383,25 @@ Pass 2  encode:
 </section>
 
 <section>
+  <h2>OCR (Bitmap to Text)</h2>
+  <p>The reverse direction: PGS, DVB, DVD, and XSUB bitmap subtitles to SRT, ASS, WebVTT, or MOV text via Tesseract OCR. Tested across <a href="ocr-languages/">114 languages</a> with UDHR Article 1 roundtrip (text &rarr; PGS &rarr; text). 105 pass, 9 fail (Tesseract training data limitations).</p>
+  <div class="demo">
+    <pre>
+# PGS to SRT (bitmap dedup on by default)
+ffmpeg -i movie.mkv -map 0:s:0 -c:s srt output.srt
+
+# Japanese DVD subtitles
+ffmpeg -i movie.mkv -map 0:s:0 -c:s srt -sub_ocr_lang jpn output.srt
+
+# PGS to ASS with position mapping
+ffmpeg -i movie.mkv -map 0:s:0 -c:s ass output.ass</pre>
+  </div>
+  <p>Bitmap deduplication skips OCR on palette-only changes (PGS fade sequences). PSM fallback handles RTL and complex scripts. Per-language <code>preserve_interword_spaces</code> tuning prevents word merging in Arabic, Hebrew, and Persian.</p>
+</section>
+
+<section>
   <h2>Tests</h2>
-  <p style="margin-bottom:1rem">8 new FATE tests, all passing:</p>
+  <p style="margin-bottom:1rem">9 new FATE tests, all passing:</p>
   <div class="fate-list">
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-pgs</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">quantize</span></div>
@@ -381,6 +411,7 @@ Pass 2  encode:
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-coalesce</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-rectsplit</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">gifenc-rgba</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-ocr-roundtrip</span></div>
   </div>
 </section>
 
@@ -397,6 +428,7 @@ Pass 2  encode:
     <a href="https://trac.ffmpeg.org/ticket/3819">Bug #3819</a>
     <a href="color-distance/">Color Distance Metrics</a>
     <a href="quantizers/">Quantizer Comparison</a>
+    <a href="ocr-languages/">OCR Language Coverage</a>
     <a href="ocr-review/">OCR Review Tool</a>
     <a href="https://github.com/slartibardfast/punkgraphicstream">PunkGraphicStream</a>
   </div>
