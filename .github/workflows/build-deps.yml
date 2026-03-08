@@ -154,10 +154,17 @@ jobs:
           set(CMAKE_AR "$AR")
           set(CMAKE_RANLIB "$RANLIB")
           set(CMAKE_FIND_ROOT_PATH "$PREFIX")
+          EOF
+
+          # Restrict library/include search to sysroot only when cross-compiling;
+          # native builds need access to system libs (e.g. libm for Leptonica)
+          if [ -n "$CROSS" ] || [ -n "$MACOS_TARGET" ]; then
+            cat >> /tmp/cross.cmake << EOF
           set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
           EOF
+          fi
 
           AUTOCONF_FLAGS="$AUTOCONF_HOST --prefix=$PREFIX --enable-static --disable-shared"
 
@@ -376,6 +383,10 @@ jobs:
             -DBUILD_PROG=OFF \
             -GNinja
           ninja -C lept-build install
+          # Remove CMake config so Tesseract finds Leptonica via pkg-config;
+          # the CMake config exports ZLIB::ZLIB as a transitive target that
+          # fails to resolve in Tesseract's configure step
+          rm -rf "$PREFIX"/lib/cmake/leptonica
 
           # ── Tesseract (OCR engine) ──────────────────────────────────────
           cmake -S tesseract-5.5.2 -B tess-build \
