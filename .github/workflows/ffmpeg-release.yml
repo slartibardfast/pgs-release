@@ -55,24 +55,21 @@ jobs:
         with:
           submodules: recursive
 
-      # ── Linux: build tools only (deps built from source below) ───────────────
+      # ── Install build tools ──────────────────────────────────────────────
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y nasm pkg-config cmake meson ninja-build autoconf automake libtool
+          sudo apt-get install -y nasm pkg-config
 
-      # ── macOS: build tools (both arm64 native and x86_64 cross-compile) ──────
       - name: Install macOS dependencies
         if: matrix.os == 'macos'
         run: |
-          brew install pkg-config nasm ninja meson autoconf automake libtool coreutils
+          brew install pkg-config nasm coreutils
 
-      # ── Windows arm64: llvm-mingw ──────────────────────────────────────────
       - name: Install llvm-mingw
         if: matrix.llvm_mingw
         run: |
-          # Find the Ubuntu x86_64 host package from the latest release
           URL=$(curl -fsSL https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest | \
             python3 -c "
           import sys, json
@@ -87,278 +84,27 @@ jobs:
           tar xf llvm-mingw.tar.xz
           echo "$PWD/$(ls -d llvm-mingw-*/)/bin" >> "$GITHUB_PATH"
 
-      # ── Windows x86_64: mingw-w64 ─────────────────────────────────────────
       - name: Install mingw-w64
         if: matrix.os == 'windows' && !matrix.llvm_mingw
         run: |
           sudo apt-get update
-          sudo apt-get install -y nasm mingw-w64 pkg-config cmake meson ninja-build
+          sudo apt-get install -y nasm mingw-w64 pkg-config
 
-      # ── Windows arm64: build tools ────────────────────────────────────────
       - name: Install build tools for llvm-mingw
         if: matrix.llvm_mingw
         run: |
           sudo apt-get update
-          sudo apt-get install -y nasm pkg-config cmake meson ninja-build autoconf automake libtool
+          sudo apt-get install -y nasm pkg-config
 
-      # ── All targets: build full dep chain from source ─────────────────────
-      # zlib → freetype2 → fribidi → harfbuzz → libass
-      # Sysroot contains only .a files; host packages never leak in.
-      - name: Build dependencies from source
+      # ── Download pre-built sysroot ───────────────────────────────────────
+      - name: Download sysroot
         env:
-          CROSS:        ${{ matrix.cross }}
-          MACOS_TARGET: ${{ matrix.macos_target }}
-          PREFIX:       ${{ github.workspace }}/sysroot
+          PREFIX: ${{ github.workspace }}/sysroot
         run: |
-          set -e
+          SYSROOT_URL="https://github.com/${{ github.repository }}/releases/download/sysroot-v1"
           mkdir -p "$PREFIX"
-
-          # ── Compiler / flag setup ──────────────────────────────────────────
-          if [ -n "$MACOS_TARGET" ]; then
-            # macOS x86_64 cross-compile on M1
-            CC="clang -target $MACOS_TARGET"
-            CXX="clang++ -target $MACOS_TARGET"
-            AR="ar"
-            RANLIB="ranlib"
-            STRIP="strip"
-            AUTOCONF_HOST="--host=x86_64-apple-darwin"  # tell autoconf the target arch
-            CMAKE_SYSTEM_NAME="Darwin"
-            CMAKE_PROCESSOR="x86_64"
-          elif [ -n "$CROSS" ]; then
-            # Windows cross-compile
-            CC="$CROSS-gcc"
-            CXX="$CROSS-g++"
-            AR="$CROSS-ar"
-            RANLIB="$CROSS-ranlib"
-            STRIP="$CROSS-strip"
-            AUTOCONF_HOST="--host=$CROSS"
-            ARCH=$(echo "$CROSS" | cut -d- -f1)
-            if [[ "$CROSS" == *mingw* ]]; then
-              CMAKE_SYSTEM_NAME="Windows"
-            fi
-            CMAKE_PROCESSOR="$ARCH"
-          else
-            # Native build (Linux or macOS arm64)
-            CC="cc"
-            CXX="c++"
-            AR="ar"
-            RANLIB="ranlib"
-            STRIP="strip"
-            AUTOCONF_HOST=""
-            CMAKE_SYSTEM_NAME="$(uname -s)"
-            CMAKE_PROCESSOR="$(uname -m)"
-          fi
-
-          export CC CXX AR RANLIB STRIP
-          export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
-          export PKG_CONFIG_PATH=""
-
-          # CMake requires CMAKE_C_COMPILER to be a bare path (no spaces).
-          # For macOS cross-compile, wrap the compiler+target flag in a script.
-          if [ -n "$MACOS_TARGET" ]; then
-            printf '#!/bin/sh\nexec clang -target %s "$@"\n' "$MACOS_TARGET" \
-              > /tmp/cc-wrap
-            printf '#!/bin/sh\nexec clang++ -target %s "$@"\n' "$MACOS_TARGET" \
-              > /tmp/cxx-wrap
-            chmod +x /tmp/cc-wrap /tmp/cxx-wrap
-            CMAKE_CC=/tmp/cc-wrap
-            CMAKE_CXX=/tmp/cxx-wrap
-          else
-            CMAKE_CC="$CC"
-            CMAKE_CXX="$CXX"
-          fi
-
-          # ── CMake toolchain file ───────────────────────────────────────────
-          cat > /tmp/cross.cmake << EOF
-          set(CMAKE_SYSTEM_NAME ${CMAKE_SYSTEM_NAME:-$(uname -s)})
-          set(CMAKE_SYSTEM_PROCESSOR $CMAKE_PROCESSOR)
-          set(CMAKE_C_COMPILER "$CMAKE_CC")
-          set(CMAKE_CXX_COMPILER "$CMAKE_CXX")
-          set(CMAKE_AR "$AR")
-          set(CMAKE_RANLIB "$RANLIB")
-          set(CMAKE_FIND_ROOT_PATH "$PREFIX")
-          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-          set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-          EOF
-
-          AUTOCONF_FLAGS="$AUTOCONF_HOST --prefix=$PREFIX --enable-static --disable-shared"
-
-          # ── Download pinned dependency sources from our deps release ─────
-          DEPS_URL="https://github.com/${{ github.repository }}/releases/download/deps-v1"
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o zlib.tar.gz    "$DEPS_URL/zlib-1.3.1.tar.gz" &
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o ft.tar.gz      "$DEPS_URL/freetype-VER-2-13-3.tar.gz" &
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o libpng.tar.gz  "$DEPS_URL/libpng-1.6.55.tar.gz" &
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o fribidi.tar.xz "$DEPS_URL/fribidi-1.0.16.tar.xz" &
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o gr2.tar.gz    "$DEPS_URL/graphite2-1.3.14.tar.gz" &
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o icu.tgz       "$DEPS_URL/icu4c-78.2-sources.tgz" &
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o hb.tar.xz      "$DEPS_URL/harfbuzz-10.2.0.tar.xz" &
-          wait
-          tar xf zlib.tar.gz
-          tar xf libpng.tar.gz
-          tar xf ft.tar.gz
-          tar xf fribidi.tar.xz
-          tar xf gr2.tar.gz
-          tar xf icu.tgz
-          tar xf hb.tar.xz
-
-          # ── zlib ──────────────────────────────────────────────────────────
-          cd zlib-1.3.1
-          # zlib uses a non-autoconf configure; set CC explicitly
-          CC="$CC" AR="$AR" RANLIB="$RANLIB" \
-          CFLAGS="-O2" \
-          ./configure --prefix="$PREFIX" --static
-          make -j$(nproc) install
-          cd ..
-
-          # ── libpng (needed for color emoji glyphs in FreeType) ────────────
-          cmake -S libpng-1.6.55 -B png-build \
-            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
-            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DPNG_TESTS=OFF \
-            -DPNG_TOOLS=OFF \
-            -GNinja
-          ninja -C png-build install
-
-          # ── freetype2 (full: with zlib+png, without harfbuzz initially) ──
-          cmake -S freetype-VER-2-13-3 -B ft-build \
-            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
-            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DFT_REQUIRE_ZLIB=ON \
-            -DFT_DISABLE_BZIP2=ON \
-            -DFT_REQUIRE_PNG=ON \
-            -DFT_DISABLE_HARFBUZZ=ON \
-            -DFT_DISABLE_BROTLI=ON \
-            -GNinja
-          ninja -C ft-build install
-
-          # ── fribidi (BiDi algorithm for RTL languages) ────────────────────
-          cd fribidi-1.0.16
-          CFLAGS="-O2" \
-          ./configure $AUTOCONF_FLAGS --disable-docs
-          make -j$(nproc) install
-          cd ..
-
-          # ── graphite2 (SIL script rendering) ──────────────────────────
-          # graphite2 has no option to skip tests; patch CMakeLists.txt
-          # Strip all test infrastructure from graphite2
-          SED_I=(sed -i)
-          [ "$(uname)" = "Darwin" ] && SED_I=(sed -i '')
-          "${SED_I[@]}" '/add_subdirectory(tests)/d; /add_subdirectory(gr2fonttest)/d; /enable_testing/d' \
-            graphite-1.3.14/CMakeLists.txt
-          "${SED_I[@]}" '/nolib_test/d' \
-            graphite-1.3.14/src/CMakeLists.txt
-          cmake -S graphite-1.3.14 -B gr2-build \
-            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
-            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DGRAPHITE2_NFILEFACE=ON \
-            -GNinja
-          ninja -C gr2-build install
-
-          # ── ICU (Unicode normalization for harfbuzz) ────────────────────
-          ICU_COMMON="--disable-tests --disable-samples --disable-extras --disable-icuio"
-          # ICU cross-compile requires a native build first
-          if [ -n "$CROSS" ] || [ -n "$MACOS_TARGET" ]; then
-            mkdir -p icu-native-build && cd icu-native-build
-            CC=cc CXX=c++ ../icu/source/configure \
-              --disable-shared --enable-static $ICU_COMMON
-            make -j$(nproc)
-            cd ..
-            ICU_CROSS="--with-cross-build=$PWD/icu-native-build --disable-tools"
-          else
-            ICU_CROSS=""
-          fi
-          mkdir -p icu-build && cd icu-build
-          ../icu/source/configure $AUTOCONF_FLAGS \
-            $ICU_COMMON $ICU_CROSS
-          make -j$(nproc) install
-          cd ..
-          # ICU static builds use 's' prefix (libsicuuc.a); create
-          # standard-name symlinks so CMake FindICU can find them
-          for lib in "$PREFIX"/lib/libsicu*.a; do
-            [ -f "$lib" ] || continue
-            ln -sf "$(basename "$lib")" "${lib/libsicu/libicu}"
-          done
-
-          # ── harfbuzz (OpenType shaping: Arabic, Devanagari, CJK, etc.) ────
-          HB_ARGS=(
-            --prefix="$PREFIX"
-            --libdir="$PREFIX/lib"
-            --default-library=static
-            --pkg-config-path="$PREFIX/lib/pkgconfig"
-            -Dfreetype=enabled
-            -Dglib=disabled
-            -Dicu=enabled
-            -Dgraphite2=enabled
-            -Dicu_builtin=true
-            -Dtests=disabled
-            -Ddocs=disabled
-          )
-          # Cross-compile: generate meson cross file
-          if [ -n "$CROSS" ] || [ -n "$MACOS_TARGET" ]; then
-            if [ -n "$MACOS_TARGET" ]; then
-              HB_CC="/tmp/cc-wrap"
-              HB_CXX="/tmp/cxx-wrap"
-              HB_SYSTEM="darwin"
-              HB_CPU="x86_64"
-            else
-              HB_CC="$CC"
-              HB_CXX="$CXX"
-              ARCH=$(echo "$CROSS" | cut -d- -f1)
-              HB_CPU="$ARCH"
-              [[ "$CROSS" == *mingw* ]] && HB_SYSTEM="windows" || HB_SYSTEM="linux"
-            fi
-            cat > /tmp/hb-cross.ini << CROSSEOF
-          [binaries]
-          c = '$HB_CC'
-          cpp = '$HB_CXX'
-          ar = '$AR'
-          strip = '$STRIP'
-          pkg-config = 'pkg-config'
-
-          [host_machine]
-          system = '$HB_SYSTEM'
-          cpu_family = '$HB_CPU'
-          cpu = '$HB_CPU'
-          endian = 'little'
-          CROSSEOF
-            HB_ARGS+=(--cross-file=/tmp/hb-cross.ini)
-          fi
-          # Windows static graphite2: suppress dllimport decorations
-          if [[ "${CROSS:-}" == *mingw* ]]; then
-            HB_ARGS+=(-Dcpp_args='-Wa,-mbig-obj -DGRAPHITE2_STATIC')
-          fi
-          meson setup hb-build harfbuzz-10.2.0 "${HB_ARGS[@]}"
-          ninja -C hb-build install
-
-          # ── freetype2 rebuild with harfbuzz (color glyphs, OTL features) ──
-          cmake -S freetype-VER-2-13-3 -B ft-build2 \
-            -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
-            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DFT_REQUIRE_ZLIB=ON \
-            -DFT_DISABLE_BZIP2=ON \
-            -DFT_REQUIRE_PNG=ON \
-            -DFT_REQUIRE_HARFBUZZ=ON \
-            -DFT_DISABLE_BROTLI=ON \
-            -GNinja
-          ninja -C ft-build2 install
-
-          # ── libass (pinned 0.17.4 from submodule) ─────────────────────────
-          cd libass
-          ./autogen.sh
-          CFLAGS="-O2" \
-          PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
-          PKG_CONFIG_PATH="" \
-          ./configure $AUTOCONF_FLAGS \
-            --disable-fontconfig \
-            --disable-require-system-font-provider
-          make -j$(nproc) install
-          cd ..
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
+            "$SYSROOT_URL/sysroot-${{ matrix.target }}.tar.gz" | tar xz -C "$PREFIX"
 
       # ── Build FFmpeg ───────────────────────────────────────────────────────
       - name: Configure FFmpeg
@@ -453,9 +199,6 @@ jobs:
 
           # Native build with sysroot (Linux or macOS arm64)
           if [ "${{ matrix.os }}" != "windows" ] && [ -z "${{ matrix.macos_target }}" ]; then
-            # Linux: statically link GCC + C++ runtimes so libgcc_s.so and
-            # libstdc++.so don't leak in (harfbuzz brings C++ object files).
-            # macOS uses Clang; libc++.dylib is a guaranteed system library.
             EXTRA_LD="-L$PREFIX/lib"
             [ "${{ matrix.os }}" = "linux" ] && EXTRA_LD="$EXTRA_LD -static-libgcc -static-libstdc++"
             FLAGS+=(
@@ -470,7 +213,6 @@ jobs:
           # Cross-compile: Windows
           if [ "${{ matrix.os }}" = "windows" ]; then
             ARCH=$(echo "${{ matrix.cross }}" | cut -d- -f1)
-            # graphite2/harfbuzz are C++; pull in the right runtime
             if [ "${{ matrix.llvm_mingw }}" = "true" ]; then
               CXX_LINK="-lc++"
             else
@@ -515,8 +257,6 @@ jobs:
           mkdir -p dist
           cp ffmpeg/ffmpeg${{ matrix.ext }}  dist/
           cp ffmpeg/ffprobe${{ matrix.ext }} dist/
-          # Windows: bundle libwinpthread-1.dll — it is required at runtime
-          # and cannot be statically linked due to how the dep chain is built.
           if [ "${{ matrix.os }}" = "windows" ] && [ -z "${{ matrix.llvm_mingw }}" ]; then
             DLL=$(find /usr/x86_64-w64-mingw32 -name 'libwinpthread-1.dll' 2>/dev/null | head -1)
             cp "$DLL" dist/
