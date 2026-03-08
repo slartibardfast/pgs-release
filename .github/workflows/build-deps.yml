@@ -146,26 +146,6 @@ jobs:
             CMAKE_CXX="$CXX"
           fi
 
-          # Pre-find script: libtiff's CMake config exports transitive targets
-          # (ZLIB::ZLIB, JPEG::JPEG, CMath::CMath) that must be pre-defined
-          # for downstream consumers (Leptonica, Tesseract).  Included via
-          # CMAKE_PROJECT_INCLUDE so it runs for every project() call.
-          cat > /tmp/pre-find-deps.cmake << 'PREOF'
-          find_package(ZLIB QUIET)
-          find_package(JPEG QUIET)
-          find_package(TIFF QUIET)
-          if(NOT TARGET CMath::CMath)
-            find_library(_CMATH_LIB NAMES m)
-            if(_CMATH_LIB)
-              add_library(CMath::CMath INTERFACE IMPORTED)
-              set_target_properties(CMath::CMath PROPERTIES
-                INTERFACE_LINK_LIBRARIES "${_CMATH_LIB}")
-            else()
-              add_library(CMath::CMath INTERFACE IMPORTED)
-            endif()
-          endif()
-          PREOF
-
           cat > /tmp/cross.cmake << EOF
           set(CMAKE_SYSTEM_NAME ${CMAKE_SYSTEM_NAME:-$(uname -s)})
           set(CMAKE_SYSTEM_PROCESSOR $CMAKE_PROCESSOR)
@@ -174,7 +154,6 @@ jobs:
           set(CMAKE_AR "$AR")
           set(CMAKE_RANLIB "$RANLIB")
           set(CMAKE_FIND_ROOT_PATH "$PREFIX")
-          set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES "/tmp/pre-find-deps.cmake")
           EOF
 
           # Restrict library/include search to sysroot only when cross-compiling;
@@ -259,6 +238,22 @@ jobs:
             -Dlerc=OFF \
             -GNinja
           ninja -C tiff-build install
+          # Patch libtiff's CMake config: replace target references with
+          # plain library flags so downstream find_package(TIFF) doesn't
+          # require pre-defined ZLIB::ZLIB, JPEG::JPEG, CMath::CMath targets
+          SED_I=(sed -i)
+          [ "$(uname)" = "Darwin" ] && SED_I=(sed -i '')
+          for f in "$PREFIX"/lib/cmake/tiff/TIFFTargets*.cmake; do
+            [ -f "$f" ] || continue
+            "${SED_I[@]}" \
+              -e 's/\$<LINK_ONLY:ZLIB::ZLIB>/-lz/g' \
+              -e 's/\$<LINK_ONLY:JPEG::JPEG>/-ljpeg/g' \
+              -e 's/\$<LINK_ONLY:CMath::CMath>/-lm/g' \
+              -e 's/ZLIB::ZLIB/-lz/g' \
+              -e 's/JPEG::JPEG/-ljpeg/g' \
+              -e 's/CMath::CMath/-lm/g' \
+              "$f"
+          done
 
           # ── freetype2 (pass 1: with zlib+png, without harfbuzz) ──────────
           cmake -S freetype-VER-2-13-3 -B ft-build \
@@ -404,6 +399,16 @@ jobs:
             -DBUILD_PROG=OFF \
             -GNinja
           ninja -C lept-build install
+          # Patch Leptonica's CMake config to resolve transitive targets
+          for f in "$PREFIX"/lib/cmake/leptonica/LeptonicaTargets*.cmake; do
+            [ -f "$f" ] || continue
+            "${SED_I[@]}" \
+              -e 's/ZLIB::ZLIB/-lz/g' \
+              -e 's/JPEG::JPEG/-ljpeg/g' \
+              -e 's/CMath::CMath/-lm/g' \
+              -e 's/TIFF::TIFF/-ltiff/g' \
+              "$f"
+          done
 
           # ── Tesseract (OCR engine) ──────────────────────────────────────
           TESS_EXTRA_FLAGS=""
