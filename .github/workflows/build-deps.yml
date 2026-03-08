@@ -383,10 +383,15 @@ jobs:
             -DBUILD_PROG=OFF \
             -GNinja
           ninja -C lept-build install
-          # Remove CMake config so Tesseract finds Leptonica via pkg-config;
-          # the CMake config exports ZLIB::ZLIB as a transitive target that
-          # fails to resolve in Tesseract's configure step
-          rm -rf "$PREFIX"/lib/cmake/leptonica
+
+          # Remove all CMake package configs from the sysroot before
+          # building Tesseract.  The installed configs (libtiff, leptonica,
+          # etc.) export transitive targets (ZLIB::ZLIB, JPEG::JPEG,
+          # CMath::CMath) that fail to resolve during Tesseract's configure.
+          # Tesseract falls back to pkg-config which handles the deps
+          # correctly via Requires.private, and FFmpeg itself only uses
+          # pkg-config.
+          rm -rf "$PREFIX"/lib/cmake
 
           # ── Tesseract (OCR engine) ──────────────────────────────────────
           cmake -S tesseract-5.5.2 -B tess-build \
