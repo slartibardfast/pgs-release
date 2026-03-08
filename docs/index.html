@@ -257,11 +257,11 @@ footer a { color: var(--fg2); }
   <h1>Subtitle Format Conversion for FFmpeg</h1>
   <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception. Converting between text (SRT, ASS, WebVTT) and bitmap (PGS, DVB, DVD, XSUB) formats has been broken for over a decade.</p>
   <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
-  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. This repository contains 21 patches that fix it &mdash; in both directions.</p>
+  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. This repository contains 21 patches that fix it &mdash; in both directions. Text to bitmap (16 text decoders &times; 4 bitmap encoders = 64 pairs) and bitmap to text (4 bitmap decoders &times; 6 text encoders = 24 pairs).</p>
   <div class="stats">
     <div><span class="stat-num">21</span><span class="stat-label">Patches</span></div>
     <div><span class="stat-num">9</span><span class="stat-label">Tests</span></div>
-    <div><span class="stat-num">88</span><span class="stat-label">Pairs unlocked</span></div>
+    <div><span class="stat-num">64 + 24</span><span class="stat-label">Pairs unlocked</span></div>
   </div>
 </header>
 
@@ -355,11 +355,11 @@ footer a { color: var(--fg2); }
 
 <section>
   <h2>Quality</h2>
-  <p style="margin-bottom:1rem">Palette quantization PSNR across representative subtitle styles:</p>
-  <div class="quality-row"><span class="style">Simple white text</span><span class="psnr">43.86 dB</span></div>
-  <div class="quality-row"><span class="style">Text with border and shadow</span><span class="psnr">36.97 dB</span></div>
-  <div class="quality-row"><span class="style">Multicolour (R/G/B)</span><span class="psnr">42.37 dB</span></div>
-  <div class="quality-row"><span class="style">Gradient stress test</span><span class="psnr">31.01 dB</span></div>
+  <p style="margin-bottom:1rem">Palette quantization PSNR at 256 colors (PGS maximum). NeuQuant is the default; Median Cut and ELBG available via <code>-quantize_method</code>. <a href="quantizers/">Full comparison</a>.</p>
+  <div class="quality-row"><span class="style">Simple white text</span><span class="psnr">99.99 dB (all)</span></div>
+  <div class="quality-row"><span class="style">Karaoke highlight</span><span class="psnr">99.99 dB (all)</span></div>
+  <div class="quality-row"><span class="style">Multicolour (4 regions)</span><span class="psnr">69.20 dB (Median Cut)</span></div>
+  <div class="quality-row"><span class="style">RGB gradient stress test</span><span class="psnr">35.31 dB (ELBG)</span></div>
 </section>
 
 <section>
