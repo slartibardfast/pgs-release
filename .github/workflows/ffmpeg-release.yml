@@ -285,9 +285,9 @@ jobs:
           done
 
           # ── harfbuzz (OpenType shaping: Arabic, Devanagari, CJK, etc.) ────
-          # Windows: harfbuzz.cc amalgamation exceeds default COFF section limit
           HB_EXTRA=()
-          [[ "${CROSS:-}" == *mingw* ]] && HB_EXTRA+=(-DCMAKE_CXX_FLAGS=-Wa,-mbig-obj)
+          # Windows: amalgamation needs -mbig-obj; graphite2 static needs define
+          [[ "${CROSS:-}" == *mingw* ]] && HB_EXTRA+=("-DCMAKE_CXX_FLAGS=-Wa,-mbig-obj -DGRAPHITE2_STATIC")
 
           cmake -S harfbuzz-10.2.0 -B hb-build \
             -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
