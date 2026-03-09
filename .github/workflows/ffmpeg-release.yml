@@ -209,6 +209,7 @@ jobs:
 
             # Filters
             --enable-filter=subtitles
+            --enable-filter=ocr
             --enable-filter=null
             --enable-filter=anull
             --enable-filter=copy
