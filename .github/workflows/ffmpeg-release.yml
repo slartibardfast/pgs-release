@@ -218,7 +218,11 @@ jobs:
           # Native build with sysroot (Linux or macOS arm64)
           if [ "${{ matrix.os }}" != "windows" ] && [ -z "${{ matrix.macos_target }}" ]; then
             EXTRA_LD="-L$PREFIX/lib"
-            [ "${{ matrix.os }}" = "linux" ] && EXTRA_LD="$EXTRA_LD -static-libgcc -static-libstdc++"
+            if [ "${{ matrix.os }}" = "linux" ]; then
+              EXTRA_LD="$EXTRA_LD -lstdc++ -static-libgcc -static-libstdc++"
+            else
+              EXTRA_LD="$EXTRA_LD -lc++"
+            fi
             FLAGS+=(
               --pkg-config-flags=--static
               --extra-cflags="-I$PREFIX/include"
@@ -257,7 +261,7 @@ jobs:
               --cxx="clang++ -target $TARGET"
               --arch=x86_64
               --extra-cflags="-target $TARGET -I$PREFIX/include"
-              --extra-ldflags="-target $TARGET -L$PREFIX/lib"
+              --extra-ldflags="-target $TARGET -L$PREFIX/lib -lc++"
               --pkg-config-flags=--static
             )
             export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
