@@ -226,7 +226,7 @@ jobs:
               --pkg-config=pkg-config
               --pkg-config-flags=--static
               --extra-cflags="-I$PREFIX/include"
-              --extra-ldflags="-L$PREFIX/lib $CXX_LINK"
+              --extra-ldflags="-L$PREFIX/lib $CXX_LINK -lws2_32"
             )
             export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
             export PKG_CONFIG_PATH=""
