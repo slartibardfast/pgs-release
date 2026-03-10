@@ -269,10 +269,6 @@ jobs:
           mkdir -p dist
           cp ffmpeg/ffmpeg${{ matrix.ext }}  dist/
           cp ffmpeg/ffprobe${{ matrix.ext }} dist/
-          if [ "${{ matrix.os }}" = "windows" ] && [ -z "${{ matrix.llvm_mingw }}" ]; then
-            DLL=$(find /usr/x86_64-w64-mingw32 -name 'libwinpthread-1.dll' 2>/dev/null | head -1)
-            cp "$DLL" dist/
-          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
