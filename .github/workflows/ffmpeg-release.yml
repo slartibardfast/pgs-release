@@ -106,23 +106,6 @@ jobs:
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
             "$SYSROOT_URL/sysroot-${{ matrix.target }}.tar.gz" | tar xz -C "$PREFIX"
 
-      # ── Debug: verify sysroot contents ──────────────────────────────────
-      - name: Debug sysroot
-        env:
-          PREFIX: ${{ github.workspace }}/sysroot
-        run: |
-          echo "=== pkg-config files ==="
-          ls -la "$PREFIX/lib/pkgconfig/"
-          echo "=== tesseract.pc ==="
-          cat "$PREFIX/lib/pkgconfig/tesseract.pc"
-          echo "=== lept.pc ==="
-          cat "$PREFIX/lib/pkgconfig/lept.pc"
-          echo "=== libraries ==="
-          ls -la "$PREFIX/lib/"*.a 2>/dev/null || echo "no .a files"
-          echo "=== pkg-config test ==="
-          PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" PKG_CONFIG_PATH="" pkg-config --exists --print-errors tesseract 2>&1 && echo "tesseract: OK" || echo "tesseract: FAIL"
-          PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" PKG_CONFIG_PATH="" pkg-config --static --libs tesseract 2>&1 || true
-
       # ── Build FFmpeg ───────────────────────────────────────────────────────
       - name: Configure FFmpeg
         working-directory: ffmpeg
