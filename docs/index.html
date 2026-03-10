@@ -228,6 +228,53 @@ section li::before {
   color: var(--fg);
 }
 
+/* Downloads */
+.download-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+@media (max-width: 540px) { .download-grid { grid-template-columns: 1fr; } }
+.download-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: border-color 0.15s;
+}
+.download-card:hover { border-color: var(--accent); text-decoration: none; }
+.download-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+}
+.download-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--fg);
+  display: block;
+}
+.download-sub {
+  font-size: 0.72rem;
+  color: var(--fg3);
+  display: block;
+  margin-top: 0.1rem;
+}
+.download-note {
+  font-size: 0.82rem;
+  color: var(--fg2);
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
+.download-note code {
+  font-size: 0.78rem;
+}
+
 /* Links */
 .links {
   display: flex;
@@ -424,8 +471,72 @@ ffmpeg -i movie.mkv -map 0:s:0 -c:s ass output.ass</pre>
 </section>
 
 <section>
+  <h2>Download</h2>
+  <p>Pre-built static binaries of <code>ffmpeg</code> and <code>ffprobe</code> with full subtitle conversion support. No external dependencies required. Licensed under <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
+
+  <div class="download-grid">
+    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
+      <span class="download-icon">&#128039;</span>
+      <div><span class="download-label">Linux x86_64</span><span class="download-sub">glibc 2.17+ (RHEL 7, Ubuntu 18.04+)</span></div>
+    </a>
+    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
+      <span class="download-icon">&#128039;</span>
+      <div><span class="download-label">Linux arm64</span><span class="download-sub">glibc 2.17+ (Raspberry Pi OS, Ubuntu 20.04+)</span></div>
+    </a>
+    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
+      <span class="download-icon">&#63743;</span>
+      <div><span class="download-label">macOS x86_64</span><span class="download-sub">macOS 10.14 Mojave+</span></div>
+    </a>
+    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
+      <span class="download-icon">&#63743;</span>
+      <div><span class="download-label">macOS arm64</span><span class="download-sub">macOS 11 Big Sur+ (Apple Silicon)</span></div>
+    </a>
+    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
+      <span class="download-icon">&#9638;</span>
+      <div><span class="download-label">Windows x86_64</span><span class="download-sub">Windows 10+</span></div>
+    </a>
+    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
+      <span class="download-icon">&#9638;</span>
+      <div><span class="download-label">Windows arm64</span><span class="download-sub">Windows 11 arm64</span></div>
+    </a>
+  </div>
+
+  <p class="download-note">Each target is available in two variants: a minimal bundle (<code>ffmpeg</code> + <code>ffprobe</code>) and an <code>-eng</code> bundle that includes English OCR training data. For other languages, download <code>.traineddata</code> files from the <a href="https://github.com/slartibardfast/pgs-release/releases/tag/tessdata-v1">tessdata release</a> (124 languages) and place them in a <code>tessdata/</code> directory next to the binary.</p>
+
+  <p class="download-note"><strong>Static dependency chain:</strong> zlib 1.3.1, libpng 1.6.55, freetype 2.13.3, fribidi 1.0.16, graphite2 1.3.14, ICU 78.2, harfbuzz 10.2.0, libass 0.17.4, leptonica 1.87.0, tesseract 5.5.2. All linked statically. Only platform-mandated dynamic libraries remain (glibc on Linux, libSystem on macOS, kernel DLLs on Windows).</p>
+</section>
+
+<section>
+  <h2>Usage</h2>
+  <div class="demo">
+    <pre>
+# Text to PGS (Blu-ray bitmap subtitles)
+ffmpeg -i input.mkv -c:s pgssub -c:v copy -c:a copy output.mkv
+
+# Text to PGS (.sup file for muxing tools)
+ffmpeg -i subtitles.srt -s 1920x1080 output.sup
+
+# PGS/DVD/DVB bitmap to SRT text (OCR)
+ffmpeg -i input.mkv -c:s srt output.mkv
+
+# PGS to ASS with position mapping
+ffmpeg -i input.mkv -c:s ass output.mkv
+
+# Japanese DVD subtitles to SRT
+ffmpeg -i input.mkv -c:s srt -sub_ocr_lang jpn output.srt
+
+# Remux subtitles without conversion
+ffmpeg -i input.mkv -c:s copy -c:v copy -c:a copy output.mp4
+
+# Choose quantization method for PGS encoding
+ffmpeg -i input.mkv -c:s pgssub -quantize_method mediancut output.mkv</pre>
+  </div>
+</section>
+
+<section>
   <h2>Links</h2>
   <div class="links">
+    <a href="https://github.com/slartibardfast/pgs-release/releases">Releases</a>
     <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">Patches</a>
     <a href="https://trac.ffmpeg.org/ticket/3819">Bug #3819</a>
     <a href="color-distance/">Color Distance Metrics</a>
