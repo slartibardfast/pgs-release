@@ -223,8 +223,10 @@ jobs:
             ARCH=$(echo "${{ matrix.cross }}" | cut -d- -f1)
             if [ "${{ matrix.llvm_mingw }}" = "true" ]; then
               CXX_LINK="-lc++"
+              EXTRA_WIN_LD="-L$PREFIX/lib -static"
             else
               CXX_LINK="-lstdc++ -static-libgcc"
+              EXTRA_WIN_LD="-L$PREFIX/lib -static-libstdc++"
             fi
             FLAGS+=(
               --cross-prefix="${{ matrix.cross }}-"
@@ -233,7 +235,7 @@ jobs:
               --pkg-config=pkg-config
               --pkg-config-flags=--static
               --extra-cflags="-I$PREFIX/include"
-              --extra-ldflags="-L$PREFIX/lib"
+              --extra-ldflags="$EXTRA_WIN_LD"
               --extra-libs="$CXX_LINK -lws2_32"
             )
             export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"

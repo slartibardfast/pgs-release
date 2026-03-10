@@ -203,6 +203,8 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=/tmp/cross.cmake \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" \
             -DBUILD_SHARED_LIBS=OFF \
+            -DPNG_SHARED=OFF \
+            -DPNG_STATIC=ON \
             -DPNG_TESTS=OFF \
             -DPNG_TOOLS=OFF \
             -GNinja
@@ -422,6 +424,14 @@ jobs:
             -DBUILD_TESTS=OFF \
             -GNinja
           ninja -C tess-build install
+
+          # ── Remove any shared libraries from sysroot ─────────────────────
+          # Some CMake builds may install shared libs despite
+          # BUILD_SHARED_LIBS=OFF. Remove them so the linker can only
+          # find static archives.
+          rm -f "$PREFIX"/lib/*.so "$PREFIX"/lib/*.so.* \
+                "$PREFIX"/lib/*.dylib \
+                "$PREFIX"/lib/*.dll "$PREFIX"/lib/*.dll.a
 
       - name: Package sysroot
         env:
