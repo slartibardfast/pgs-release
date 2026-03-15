@@ -169,6 +169,12 @@ section li::before {
   color: var(--fg2);
 }
 .data-table tr:last-child td { border-bottom: none; }
+.data-table-heading {
+  font-size: 0.85rem;
+  color: var(--fg);
+  margin: 1.5rem 0 0.75rem;
+  font-weight: 500;
+}
 .best { font-weight: 600; color: var(--fg); }
 .elbg { color: var(--elbg); }
 .mediancut { color: var(--mediancut); }
@@ -283,7 +289,7 @@ footer a { color: var(--fg2); }
   <h2>Quality &mdash; PSNR (dB)</h2>
   <p style="margin-bottom:0.5rem">Higher is better. &ge;40&thinsp;dB is visually lossless for subtitles. Measured on five test images at three palette sizes.</p>
 
-  <h3 style="font-size:0.85rem; color:var(--fg); margin: 1.5rem 0 0.75rem; font-weight:500;">16-color palette</h3>
+  <h3 class="data-table-heading">16-color palette</h3>
   <table class="data-table">
     <tr><th>Image</th><th class="elbg">ELBG</th><th class="mediancut">Median Cut</th><th class="neuquant">NeuQuant</th></tr>
     <tr><td>Simple white text</td><td class="best">99.99</td><td class="best">99.99</td><td class="best">99.99</td></tr>
@@ -293,7 +299,7 @@ footer a { color: var(--fg2); }
     <tr><td>HSV colour sweep</td><td class="best">20.73</td><td>19.14</td><td>15.32</td></tr>
   </table>
 
-  <h3 style="font-size:0.85rem; color:var(--fg); margin: 1.5rem 0 0.75rem; font-weight:500;">64-color palette</h3>
+  <h3 class="data-table-heading">64-color palette</h3>
   <table class="data-table">
     <tr><th>Image</th><th class="elbg">ELBG</th><th class="mediancut">Median Cut</th><th class="neuquant">NeuQuant</th></tr>
     <tr><td>Simple white text</td><td class="best">99.99</td><td class="best">99.99</td><td class="best">99.99</td></tr>
@@ -303,7 +309,7 @@ footer a { color: var(--fg2); }
     <tr><td>HSV colour sweep</td><td class="best">26.37</td><td>24.14</td><td>20.06</td></tr>
   </table>
 
-  <h3 style="font-size:0.85rem; color:var(--fg); margin: 1.5rem 0 0.75rem; font-weight:500;">256-color palette (PGS maximum)</h3>
+  <h3 class="data-table-heading">256-color palette (PGS maximum)</h3>
   <table class="data-table">
     <tr><th>Image</th><th class="elbg">ELBG</th><th class="mediancut">Median Cut</th><th class="neuquant">NeuQuant</th></tr>
     <tr><td>Simple white text</td><td class="best">99.99</td><td class="best">99.99</td><td class="best">99.99</td></tr>
@@ -348,7 +354,7 @@ footer a { color: var(--fg2); }
   <h2>Performance &mdash; Time (ms)</h2>
   <p style="margin-bottom:0.5rem">Generate palette + map pixels for 8,192 pixels (128&times;64). Lower is better.</p>
 
-  <h3 style="font-size:0.85rem; color:var(--fg); margin: 1.5rem 0 0.75rem; font-weight:500;">HSV colour sweep (worst case)</h3>
+  <h3 class="data-table-heading">HSV colour sweep (worst case)</h3>
   <table class="data-table">
     <tr><th>Palette size</th><th class="elbg">ELBG</th><th class="mediancut">Median Cut</th><th class="neuquant">NeuQuant</th></tr>
     <tr><td>16 colors</td><td>2.54</td><td>8.41</td><td class="best">2.16</td></tr>
@@ -356,7 +362,7 @@ footer a { color: var(--fg2); }
     <tr><td>256 colors</td><td>24.59</td><td>17.91</td><td class="best">5.06</td></tr>
   </table>
 
-  <h3 style="font-size:0.85rem; color:var(--fg); margin: 1.5rem 0 0.75rem; font-weight:500;">Simple white text (best case)</h3>
+  <h3 class="data-table-heading">Simple white text (best case)</h3>
   <table class="data-table">
     <tr><th>Palette size</th><th class="elbg">ELBG</th><th class="mediancut">Median Cut</th><th class="neuquant">NeuQuant</th></tr>
     <tr><td>16 colors</td><td>1.51</td><td>0.74</td><td class="best">0.49</td></tr>
