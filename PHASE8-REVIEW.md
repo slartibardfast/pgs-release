@@ -348,49 +348,45 @@ boolean would be cleaner.
 
 ---
 
-## Decision Points
+## Decisions
 
-### D1: Public vs internal API naming
+### D1: Move render/OCR code to fftools (option 3)
 
-The render and OCR APIs must be callable from fftools. In shared
-builds, `ff_` symbols are not exported from `.so` files. Three paths:
+The render and OCR code moves from libavfilter into fftools. No
+library API — the code compiles directly into the ffmpeg binary,
+matching the sub2video precedent. fftools links libass and Tesseract
+directly via configure changes.
 
-| Option | Pros | Cons |
-|--------|------|------|
-| Keep `avfilter_*` (public) | Works in all builds, correct API boundary | Requires API stability commitment, harder review |
-| Use `ff_*` (internal) | Simpler review, no stability commitment | Breaks shared/dynamic builds |
-| Move to fftools directly | No library API at all, matches sub2video | Requires fftools to link libass/tesseract directly |
+This eliminates the `avfilter_*` vs `ff_*` naming debate, the API
+stability commitment, and the shared-build visibility problem.
 
-**Recommended:** Keep `avfilter_*` for the initial submission with
-strong cover letter justification. The API is small, stable, and
-follows precedent. If reviewers insist on `ff_`, propose the fftools
-integration path as a fallback.
+The `subtitle_render.{h,c}` and `subtitle_ocr.{h,c}` files move
+from `libavfilter/` to `fftools/`. The APIchanges entries and
+libavfilter version bumps for these functions are removed.
 
-### D2: Subtitle animation in fftools vs library
+### D2: Animation stays in fftools
 
-The animation classification and fade encoding code is currently in
-fftools. An alternative is to put it in the encoder itself (the PGS
-encoder receives `AVSubtitle` and handles animation internally).
+Animation classification and fade encoding remain in fftools,
+consistent with the sub2video precedent and the D1 decision.
+The encoder stays simple and format-agnostic.
 
-| Option | Pros | Cons |
-|--------|------|------|
-| Keep in fftools | Encoder stays simple, format-agnostic | fftools grows, logic duplicated if other tools need it |
-| Move to encoder | Self-contained encoder, simpler fftools | Encoder grows significantly, harder to review |
+### D3: Three-file split matching fftools convention
 
-**Recommended:** Keep in fftools for the initial submission. The
-sub2video precedent shows FFmpeg is comfortable with conversion logic
-in fftools. Move to encoder in a follow-up if there's demand.
+```
+fftools/ffmpeg_enc_sub.c  — text-to-bitmap (~1200 lines)
+fftools/ffmpeg_dec_sub.c  — bitmap-to-text (~500 lines)
+fftools/ffmpeg_mux_sub.c  — gate logic, subtitle options (~50 lines)
+```
 
-### D3: File split for fftools subtitle code
+Naming follows the existing pattern where the base concern comes
+first and the specialization is the suffix:
 
-Options for the ~1500 lines of subtitle conversion code:
+```
+ffmpeg_enc.c      →  ffmpeg_enc_sub.c
+ffmpeg_dec.c      →  ffmpeg_dec_sub.c
+ffmpeg_mux_init.c →  ffmpeg_mux_sub.c
+```
 
-| Option | Files |
-|--------|-------|
-| Single file | `fftools/ffmpeg_subtitle.c` (all t2b + b2t + animation) |
-| Split by direction | `fftools/ffmpeg_sub_bitmap.c` (t2b) + `fftools/ffmpeg_sub_ocr.c` (b2t) |
-| Split by function | `fftools/ffmpeg_sub_convert.c` + `fftools/ffmpeg_sub_animate.c` |
-
-**Recommended:** Single `fftools/ffmpeg_subtitle.c` file. The code is
-tightly coupled (animation calls conversion, coalescing calls both).
-Splitting would create circular dependencies or awkward interfaces.
+The animation utilities (`ffmpeg_subtitle_animation.c`) fold into
+`ffmpeg_enc_sub.c` as regular functions with proper declarations in
+a header.
