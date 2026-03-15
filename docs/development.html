@@ -336,27 +336,26 @@ footer a { color: var(--fg2); }
   <div class="series">
     <div class="series-header">
       <span class="series-letter">v0</span>
-      <span class="series-title">Proof of concept</span>
+      <span class="series-title">Early experiments</span>
     </div>
     <ul>
-      <li>PGS encoder only, ported from <a href="https://github.com/slartibardfast/punkgraphicstream">PunkGraphicStream</a> (Java/JNI)</li>
-      <li>NeuQuant quantization from pngnq, hardcoded to 256 colors</li>
-      <li>No animation, no text-to-bitmap pipeline, no FATE tests</li>
+      <li>Rapidly evolving series of patches, ported from <a href="https://github.com/slartibardfast/punkgraphicstream">PunkGraphicStream</a> (Java/JNI)</li>
+      <li>PGS encoder, NeuQuant quantization, early text-to-bitmap work</li>
       <li>Established the patent-grounded specification (<code>docs/pgs-specification.md</code>)</li>
     </ul>
   </div>
 
   <div class="series">
     <div class="series-header">
-      <span class="series-letter">v1</span>
-      <span class="series-title">Feature-complete draft</span>
+      <span class="series-letter"><a href="https://github.com/slartibardfast/FFmpeg/tree/history/pgs-v1">v1</a></span>
+      <span class="series-title">Feature-complete series</span>
+      <span class="series-count">&middot; 21 patches</span>
     </div>
     <ul>
-      <li>21 patches across 7 phases &mdash; encoder, quantization API, text-to-bitmap, animation, GIF, OCR</li>
-      <li>Public <code>avfilter_subtitle_render_*</code> and <code>avfilter_subtitle_ocr_*</code> APIs in libavfilter</li>
-      <li>Palette animation via composition state machine, region-weighted quantization for karaoke</li>
+      <li>First complete series: encoder, quantization API, text-to-bitmap, animation, GIF, OCR</li>
+      <li>Originally on a master snapshot (<code>aa483bc4</code>), then rebased to FFmpeg 8.0.1 for stable release</li>
       <li>Three quantization algorithms (NeuQuant, Median Cut, ELBG) unified under <code>av_quantize_*</code></li>
-      <li>OCR roundtrip tested across 114 languages (105 pass, 92%)</li>
+      <li>Released as <a href="https://github.com/slartibardfast/pgs-release/releases/tag/n8.0.1-pgs.0">n8.0.1-pgs.0</a> &mdash; pre-built binaries for 6 platforms</li>
     </ul>
   </div>
 
