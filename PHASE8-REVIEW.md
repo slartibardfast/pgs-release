@@ -310,41 +310,70 @@ boolean would be cleaner.
 
 ---
 
-## Action Plan
+## Execution Plan: Full Series Rebuild
 
-### Phase 1: Structural fixes (change patch count/structure)
+The fixes are too interconnected for surgical edits to individual
+patches. Rebuild the entire series from the working HEAD.
 
-1. Split patch 7 back into ELBG move + Median Cut → 18 patches
-2. Extract `ffmpeg_subtitle_animation.c` to proper `.c`/`.h` pair
-3. Split subtitle code out of `ffmpeg_enc.c` into `ffmpeg_subtitle.c`
+### New patch structure (16 patches)
 
-### Phase 2: API fixes (change interfaces)
+```
+Series A: PGS Encoder (standalone)
+ 1. lavc/pgssubenc: add HDMV PGS subtitle encoder
 
-4. Fix enum ordering — append `AV_QUANTIZE_ELBG`, add `AV_QUANTIZE_NB`
-5. Prefix palettemap structs with `FF`
-6. Resolve `avfilter_` vs `ff_` naming (decision needed)
-7. Remove `ff_` header includes from fftools (inline ASS header,
-   propose `av_convert_lang_to`)
-8. Move `|`-to-`I` OCR post-processing to fftools
+Series B: Quantization Infrastructure
+ 2. lavu: move OkLab palette utilities from libavfilter
+ 3. lavu: add color quantization API with NeuQuant
+ 4. lavu: extract palette mapping and dithering from vf_paletteuse
+ 5. lavfi/vf_paletteuse: use libavutil palette mapping
+ 6. lavu/quantize: add region-weighted palette generation
+ 7. lavu: move ELBG from libavcodec to libavutil
+ 8. lavu: add Median Cut quantizer algorithm
+ 9. lavu: add ELBG quantizer algorithm
 
-### Phase 3: Code quality fixes
+Series C: Text-to-Bitmap (depends on B)
+10. fftools: add text-to-bitmap subtitle conversion
+11. fftools: add subtitle animation and event coalescing
 
-9. Remove unrelated gif.c change from PGS encoder patch
-10. Remove dead `struct stack_node`
-11. Fix `do_subtitle_out` const-correctness (work on copy)
-12. Refactor 460-line animated encoding function
-13. Narrow animation detection heuristic
-14. Add integer overflow checks (`nb_pixels`, `dob_used`)
-15. Fix APIchanges date ordering
-16. Convert `av_clip(x, 0, 255)` to `av_clip_uintp2(x, 8)`
+Series D: GIF Encoder (depends on B)
+12. lavc/gif: add RGBA input with built-in quantization
 
-### Phase 4: Polish
+Series E: OCR Bitmap-to-Text
+13. fftools: add bitmap-to-text subtitle conversion via OCR
 
-17. Add `av_log` context to render/OCR APIs
-18. Document palette byte order contract
-19. Add `avfilter_subtitle_render_available()` probe function
-20. Add bounds check in `bitmap_to_grayscale`
-21. Review GIF transparency slot handling
+Series F: Quantizer Selection (depends on B+C)
+14. lavc/pgssubenc, fftools: add quantize_method option
+```
+
+### Fixes integrated into each patch
+
+| Patch | Fixes integrated |
+|-------|-----------------|
+| 1 | Remove gif.c cosmetic, decoder model compliance built-in |
+| 4 | FF-prefix structs, remove dead stack_node |
+| 9 | Enum values appended (ABI-safe) |
+| 10 | Renderer in fftools (not libavfilter), no public API, const-correct subtitle handling |
+| 11 | Animation in fftools proper .c file (no #include .c), narrow detection heuristic |
+| 12 | Sorted palette fix built-in |
+| 13 | OCR in fftools (not libavfilter), |→I fixup in caller not library |
+
+### New fftools files
+
+```
+fftools/ffmpeg_enc_sub.c   — subtitle_render + text-to-bitmap + animation
+fftools/ffmpeg_enc_sub.h   — declarations for enc_sub functions
+fftools/ffmpeg_dec_sub.c   — subtitle_ocr + bitmap-to-text + dedup
+fftools/ffmpeg_dec_sub.h   — declarations for dec_sub functions
+```
+
+### Files removed from libavfilter
+
+```
+libavfilter/subtitle_render.{h,c}  — moved to fftools
+libavfilter/subtitle_ocr.{h,c}    — moved to fftools
+```
+
+No libavfilter version bumps or APIchanges entries for render/OCR.
 
 ---
 
