@@ -301,17 +301,9 @@ footer a { color: var(--fg2); }
 <div class="container">
 
 <header>
-  <p style="margin-bottom:1rem"><a href="./">&larr; Stable release</a></p>
+  <p style="margin-bottom:1rem"><a href="./">&larr; Stable release &amp; downloads</a></p>
   <h1>Development: Upstream Patch Series</h1>
-  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception. Converting between text (SRT, ASS, WebVTT) and bitmap (PGS, DVB, DVD, XSUB) formats has been broken for over a decade.</p>
-  <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
-  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. This repository contains 21 patches that fix it &mdash; in both directions. 64 bitmap encoders (16 text decoders &times; 4 bitmap encoders) and 24 text encoders (4 bitmap decoders &times; 6 text encoders).</p>
-  <div class="stats">
-    <div><span class="stat-num">21</span><span class="stat-label">Patches</span></div>
-    <div><span class="stat-num">9</span><span class="stat-label">Tests</span></div>
-    <div><span class="stat-num">64</span><span class="stat-label">Bitmap encoders</span></div>
-    <div><span class="stat-num">24</span><span class="stat-label">Text encoders</span></div>
-  </div>
+  <p>21 patches maintained against FFmpeg <code>master</code> for upstream submission. Organised into 6 independent series (A&ndash;F) that can be reviewed in parallel. Also available rebased on the <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">8.0.1 release branch</a>.</p>
 </header>
 
 <section>
@@ -412,41 +404,8 @@ footer a { color: var(--fg2); }
 </section>
 
 <section>
-  <h2>Animation</h2>
-  <div class="demo">
-    <img src="demo.gif" alt="Subtitle fade encoded as PGS">
-    <pre>
-\fad(300,500) on a 3-second event at 24fps
-
-Pass 1  scan 72 frames (~2ms), classify ALPHA
-Pass 2  encode:
-  1.000s  Epoch Start   bitmap + palette (a ~ 0%)
-  1.042s  Normal PDS    a ~ 14%
-  1.292s  Normal PDS    a ~ 100%
-  (static frames skipped)
-  3.500s  Normal PDS    a ~ 80%
-  3.958s  Normal PDS    a ~ 8%
-  4.000s  Clear</pre>
-  </div>
-  <p>All animation types handled without parsing format-specific tags.</p>
-</section>
-
-<section>
-  <h2>OCR (Bitmap to Text)</h2>
-  <p>The reverse direction: PGS, DVB, DVD, and XSUB bitmap subtitles to SRT, ASS, WebVTT, or MOV text via Tesseract OCR. Tested across <a href="ocr-languages/">114 languages</a> with UDHR Article 1 roundtrip (text &rarr; PGS &rarr; text). 105 pass, 9 fail (Tesseract training data limitations).</p>
-  <div class="demo">
-    <pre>
-# PGS to SRT (bitmap dedup on by default)
-ffmpeg -i movie.mkv -map 0:s:0 -c:s srt output.srt
-
-# Japanese DVD subtitles
-ffmpeg -i movie.mkv -map 0:s:0 -c:s srt -sub_ocr_lang jpn output.srt
-
-# PGS to ASS with position mapping
-ffmpeg -i movie.mkv -map 0:s:0 -c:s ass output.ass</pre>
-  </div>
-  <p>Bitmap deduplication skips OCR on palette-only changes (PGS fade sequences). PSM fallback handles RTL and complex scripts. Per-language <code>preserve_interword_spaces</code> tuning prevents word merging in Arabic, Hebrew, and Persian.</p>
-  <p>The <code>-eng</code> release bundle includes English tessdata. Additional languages available from the <a href="https://github.com/slartibardfast/pgs-release/releases/tag/tessdata-v1">tessdata release</a>.</p>
+  <h2>OCR details</h2>
+  <p>Tested across <a href="ocr-languages/">114 languages</a> with UDHR Article 1 roundtrip (text &rarr; PGS &rarr; text). 105 pass, 9 fail (Tesseract training data limitations). Bitmap deduplication skips OCR on palette-only changes (PGS fade sequences). PSM fallback handles RTL and complex scripts. Per-language <code>preserve_interword_spaces</code> tuning prevents word merging in Arabic, Hebrew, and Persian.</p>
 </section>
 
 <section>
@@ -472,83 +431,20 @@ ffmpeg -i movie.mkv -map 0:s:0 -c:s ass output.ass</pre>
 </section>
 
 <section>
-  <h2>Download</h2>
-  <p>Pre-built static binaries of <code>ffmpeg</code> and <code>ffprobe</code> with full subtitle conversion support. No external dependencies required. Licensed under <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
-
-  <div class="download-grid">
-    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
-      <span class="download-icon">&#128039;</span>
-      <div><span class="download-label">Linux x86_64</span><span class="download-sub">glibc 2.17+ (RHEL 7, Ubuntu 18.04+)</span></div>
-    </a>
-    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
-      <span class="download-icon">&#128039;</span>
-      <div><span class="download-label">Linux arm64</span><span class="download-sub">glibc 2.17+ (Raspberry Pi OS, Ubuntu 20.04+)</span></div>
-    </a>
-    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
-      <span class="download-icon">&#63743;</span>
-      <div><span class="download-label">macOS x86_64</span><span class="download-sub">macOS 10.14 Mojave+</span></div>
-    </a>
-    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
-      <span class="download-icon">&#63743;</span>
-      <div><span class="download-label">macOS arm64</span><span class="download-sub">macOS 11 Big Sur+ (Apple Silicon)</span></div>
-    </a>
-    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
-      <span class="download-icon">&#9638;</span>
-      <div><span class="download-label">Windows x86_64</span><span class="download-sub">Windows 10+</span></div>
-    </a>
-    <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
-      <span class="download-icon">&#9638;</span>
-      <div><span class="download-label">Windows arm64</span><span class="download-sub">Windows 11 arm64</span></div>
-    </a>
-  </div>
-
-  <p class="download-note">Each target is available in two variants: a minimal bundle (<code>ffmpeg</code> + <code>ffprobe</code>) and an <code>-eng</code> bundle that includes English OCR training data. For other languages, download <code>.traineddata</code> files from the <a href="https://github.com/slartibardfast/pgs-release/releases/tag/tessdata-v1">tessdata release</a> (124 languages) and place them in a <code>tessdata/</code> directory next to the binary.</p>
-
-  <p class="download-note"><strong>Static dependency chain:</strong> zlib 1.3.1, libpng 1.6.55, freetype 2.13.3, fribidi 1.0.16, graphite2 1.3.14, ICU 78.2, harfbuzz 10.2.0, libass 0.17.4, leptonica 1.87.0, tesseract 5.5.2. All linked statically. Only platform-mandated dynamic libraries remain (glibc on Linux, libSystem on macOS, kernel DLLs on Windows).</p>
-</section>
-
-<section>
-  <h2>Usage</h2>
-  <div class="demo">
-    <pre>
-# Text to PGS (Blu-ray bitmap subtitles)
-ffmpeg -i input.mkv -c:s pgssub -c:v copy -c:a copy output.mkv
-
-# Text to PGS (.sup file for muxing tools)
-ffmpeg -i subtitles.srt -s 1920x1080 output.sup
-
-# PGS/DVD/DVB bitmap to SRT text (OCR)
-ffmpeg -i input.mkv -c:s srt output.mkv
-
-# PGS to ASS with position mapping
-ffmpeg -i input.mkv -c:s ass output.mkv
-
-# Japanese DVD subtitles to SRT
-ffmpeg -i input.mkv -c:s srt -sub_ocr_lang jpn output.srt
-
-# Remux subtitles without conversion
-ffmpeg -i input.mkv -c:s copy -c:v copy -c:a copy output.mp4
-
-# Choose quantization method for PGS encoding
-ffmpeg -i input.mkv -c:s pgssub -quantize_method mediancut output.mkv</pre>
-  </div>
-</section>
-
-<section>
   <h2>Links</h2>
   <div class="links">
-    <a href="https://github.com/slartibardfast/pgs-release/releases">Releases</a>
-    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">Patches</a>
-    <a href="https://trac.ffmpeg.org/ticket/3819">Bug #3819</a>
-    <a href="color-distance/">Color Distance Metrics</a>
-    <a href="quantizers/">Quantizer Comparison</a>
-    <a href="ocr-languages/">OCR Language Coverage</a>
-    <a href="https://github.com/slartibardfast/punkgraphicstream">PunkGraphicStream</a>
+    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">Patches (master)</a>
+    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">Patches (8.0.1)</a>
+    <a href="quantizers/">Quantizer comparison</a>
+    <a href="ocr-languages/">OCR languages</a>
+    <a href="color-distance/">Color distance metrics</a>
+    <a href="https://trac.ffmpeg.org/ticket/3819">#3819</a>
+    <a href="https://trac.ffmpeg.org/ticket/6843">#6843</a>
   </div>
 </section>
 
 <footer>
-  Developed with assistance from <a href="https://claude.ai">Claude</a> (Anthropic). Grew out of <a href="https://github.com/slartibardfast/punkgraphicstream">PunkGraphicStream</a>.
+  <a href="./">Back to stable release &amp; downloads</a>
 </footer>
 
 </div>

@@ -61,7 +61,6 @@ code {
   padding: 0 1.5rem;
 }
 
-/* Header */
 header {
   padding: 5rem 0 3rem;
 }
@@ -87,28 +86,13 @@ header p {
   border-radius: 3px;
   margin-right: 0.5rem;
 }
-.stats {
-  display: flex;
-  gap: 2.5rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
-}
-.stat-num {
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  display: block;
-}
-.stat-label {
-  font-size: 0.75rem;
+.error-msg {
   color: var(--fg3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 500;
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 1.25rem 0;
 }
 
-/* Sections */
 section {
   padding: 2.5rem 0;
   border-top: 1px solid var(--border);
@@ -141,34 +125,6 @@ section li::before {
   color: var(--fg3);
 }
 
-/* Feature grid */
-.feature-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  margin: 1.25rem 0;
-}
-@media (max-width: 540px) { .feature-grid { grid-template-columns: 1fr; } }
-.feature-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 1rem 1.15rem;
-}
-.feature-card h3 {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--fg);
-}
-.feature-card p {
-  font-size: 0.82rem;
-  color: var(--fg2);
-  margin-bottom: 0;
-  line-height: 1.6;
-}
-
-/* Demo */
 .demo {
   margin: 1.5rem 0;
 }
@@ -186,7 +142,6 @@ section li::before {
   overflow-x: auto;
 }
 
-/* Downloads */
 .download-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -233,7 +188,6 @@ section li::before {
   font-size: 0.78rem;
 }
 
-/* Links */
 .links {
   display: flex;
   gap: 1.5rem;
@@ -244,7 +198,6 @@ section li::before {
   font-weight: 500;
 }
 
-/* Footer */
 footer {
   padding: 2.5rem 0;
   border-top: 1px solid var(--border);
@@ -260,58 +213,32 @@ footer a { color: var(--fg2); }
 
 <header>
   <h1>FFmpeg Subtitle Tools</h1>
-  <p><span class="version-tag">Stable: FFmpeg 8.0.1</span> Pre-built FFmpeg binaries with full subtitle format conversion. Text to bitmap, bitmap to text, and everything between.</p>
-  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception &mdash; converting between text (SRT, ASS, WebVTT) and bitmap (PGS, DVB, DVD) formats has been broken for over a decade (<a href="https://trac.ffmpeg.org/ticket/3819">#3819</a>, <a href="https://trac.ffmpeg.org/ticket/6843">#6843</a>). These builds fix that.</p>
-  <div class="stats">
-    <div><span class="stat-num">88</span><span class="stat-label">New conversions</span></div>
-    <div><span class="stat-num">6</span><span class="stat-label">Platforms</span></div>
-    <div><span class="stat-num">21</span><span class="stat-label">Patches</span></div>
-    <div><span class="stat-num">9</span><span class="stat-label">Tests</span></div>
-  </div>
+  <p><span class="version-tag">n8.0.1-pgs.0</span> 21 patches on <a href="https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0.1">FFmpeg 8.0.1</a>. Pre-built static binaries for 6 platforms.</p>
+  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception.</p>
+  <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
+  <p>That's <a href="https://trac.ffmpeg.org/ticket/3819">#3819</a>, open since 2014. These builds fix it &mdash; 88 new conversion pairs across both directions, plus a PGS encoder (<a href="https://trac.ffmpeg.org/ticket/6843">#6843</a>) and direct RGBA-to-GIF encoding.</p>
 </header>
 
 <section>
-  <h2>What's included</h2>
-  <div class="feature-grid">
-    <div class="feature-card">
-      <h3>PGS Encoder</h3>
-      <p>Full Blu-ray PGS subtitle encoder with composition state machine, palette animation, and decoder model compliance per HDMV patent specifications.</p>
-    </div>
-    <div class="feature-card">
-      <h3>Text to Bitmap</h3>
-      <p>Automatic conversion from any text subtitle (SRT, ASS, WebVTT, etc.) to any bitmap format. 64 new encoder pairs via libass rendering and NeuQuant quantization.</p>
-    </div>
-    <div class="feature-card">
-      <h3>Bitmap to Text (OCR)</h3>
-      <p>Tesseract OCR integration for converting PGS, DVB, and DVD bitmap subtitles to SRT, ASS, or WebVTT. 24 new encoder pairs. <a href="ocr-languages/">114 languages tested</a>.</p>
-    </div>
-    <div class="feature-card">
-      <h3>GIF Encoder</h3>
-      <p>Direct RGBA-to-GIF encoding without the <code>palettegen</code>+<code>paletteuse</code> filter chain. Configurable quantizer and dithering.</p>
-    </div>
-  </div>
-</section>
-
-<section>
   <h2>Download</h2>
-  <p>Static binaries based on <strong>FFmpeg 8.0.1</strong> (official release branch). No external dependencies. Licensed under <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
+  <p>Static binaries of <code>ffmpeg</code> and <code>ffprobe</code>. No external dependencies. <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
 
   <div class="download-grid">
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
       <span class="download-icon">&#128039;</span>
-      <div><span class="download-label">Linux x86_64</span><span class="download-sub">glibc 2.17+ (RHEL 7, Ubuntu 18.04+)</span></div>
+      <div><span class="download-label">Linux x86_64</span><span class="download-sub">glibc 2.17+</span></div>
     </a>
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
       <span class="download-icon">&#128039;</span>
-      <div><span class="download-label">Linux arm64</span><span class="download-sub">glibc 2.17+ (Raspberry Pi OS, Ubuntu 20.04+)</span></div>
+      <div><span class="download-label">Linux arm64</span><span class="download-sub">glibc 2.17+</span></div>
     </a>
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
       <span class="download-icon">&#63743;</span>
-      <div><span class="download-label">macOS x86_64</span><span class="download-sub">macOS 10.14 Mojave+</span></div>
+      <div><span class="download-label">macOS x86_64</span><span class="download-sub">10.14+</span></div>
     </a>
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
       <span class="download-icon">&#63743;</span>
-      <div><span class="download-label">macOS arm64</span><span class="download-sub">macOS 11 Big Sur+ (Apple Silicon)</span></div>
+      <div><span class="download-label">macOS arm64</span><span class="download-sub">11+ (Apple Silicon)</span></div>
     </a>
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
       <span class="download-icon">&#9638;</span>
@@ -319,77 +246,56 @@ footer a { color: var(--fg2); }
     </a>
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
       <span class="download-icon">&#9638;</span>
-      <div><span class="download-label">Windows arm64</span><span class="download-sub">Windows 11 arm64</span></div>
+      <div><span class="download-label">Windows arm64</span><span class="download-sub">Windows 11+</span></div>
     </a>
   </div>
 
-  <p class="download-note">Each target is available in two variants: a minimal bundle (<code>ffmpeg</code> + <code>ffprobe</code>) and an <code>-eng</code> bundle that includes English OCR training data. For other languages, download <code>.traineddata</code> files from the <a href="https://github.com/slartibardfast/pgs-release/releases/tag/tessdata-v1">tessdata release</a> (124 languages) and place them in a <code>tessdata/</code> directory next to the binary.</p>
-
-  <p class="download-note"><strong>Static dependency chain:</strong> zlib 1.3.1, libpng 1.6.55, freetype 2.13.3, fribidi 1.0.16, graphite2 1.3.14, ICU 78.2, harfbuzz 10.2.0, libass 0.17.4, leptonica 1.87.0, tesseract 5.5.2. All linked statically. Only platform-mandated dynamic libraries remain (glibc on Linux, libSystem on macOS, kernel DLLs on Windows).</p>
+  <p class="download-note">Each target has two variants: minimal (<code>ffmpeg</code> + <code>ffprobe</code>) and <code>-eng</code> (adds English OCR data). Other languages: download <code>.traineddata</code> from the <a href="https://github.com/slartibardfast/pgs-release/releases/tag/tessdata-v1">tessdata release</a> into a <code>tessdata/</code> directory next to the binary.</p>
 </section>
 
 <section>
   <h2>Usage</h2>
   <div class="demo">
     <pre>
-# Text to PGS (Blu-ray bitmap subtitles)
+# SRT/ASS/WebVTT to Blu-ray PGS
 ffmpeg -i input.mkv -c:s pgssub -c:v copy -c:a copy output.mkv
-
-# Text to PGS (.sup file for muxing tools)
 ffmpeg -i subtitles.srt -s 1920x1080 output.sup
 
-# PGS/DVD/DVB bitmap to SRT text (OCR)
-ffmpeg -i input.mkv -c:s srt output.mkv
-
-# Japanese DVD subtitles to SRT
+# PGS/DVD/DVB bitmap to SRT via OCR
+ffmpeg -i input.mkv -c:s srt output.srt
 ffmpeg -i input.mkv -c:s srt -sub_ocr_lang jpn output.srt
 
-# Direct RGBA to GIF (no filter pipeline)
-ffmpeg -i input.mp4 -c:v gif out.gif
-
-# Remux subtitles without conversion
-ffmpeg -i input.mkv -c:s copy -c:v copy -c:a copy output.mp4</pre>
+# RGBA to GIF without filter pipeline
+ffmpeg -i input.mp4 -c:v gif out.gif</pre>
   </div>
+  <p>Any text subtitle decoder to any bitmap encoder, and vice versa. Conversion is automatic &mdash; just set the output codec.</p>
 </section>
 
 <section>
   <h2>Animation</h2>
   <div class="demo">
-    <img src="demo.gif" alt="Subtitle fade encoded as PGS">
-    <pre>
-\fad(300,500) on a 3-second event at 24fps
-
-Pass 1  scan 72 frames (~2ms), classify ALPHA
-Pass 2  encode:
-  1.000s  Epoch Start   bitmap + palette (a ~ 0%)
-  1.042s  Normal PDS    a ~ 14%
-  1.292s  Normal PDS    a ~ 100%
-  (static frames skipped)
-  3.500s  Normal PDS    a ~ 80%
-  3.958s  Normal PDS    a ~ 8%
-  4.000s  Clear</pre>
+    <img src="demo.gif" alt="ASS fade effect encoded as PGS palette animation">
   </div>
-  <p>Fade, motion, and complex transforms handled without parsing format-specific tags. Palette-only Display Sets keep smooth fades under 1 KB each.</p>
+  <p>ASS effects like <code>\fad</code>, <code>\move</code>, and colour transforms are rendered frame-by-frame and classified automatically. Fades use palette-only Display Sets (~1 KB each) so smooth animation fits within the Blu-ray decoder model. No format-specific tag parsing required.</p>
 </section>
 
 <section>
-  <h2>About this release</h2>
-  <p>This is the first stable release based on an official FFmpeg release branch. Previous builds tracked FFmpeg <code>master</code>, which changes daily and can introduce unrelated regressions.</p>
-  <p>The <strong>n8.0.1-pgs.0</strong> tag applies 21 patches to FFmpeg's <a href="https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0.1">8.0.1 release</a> (the latest point release of the 8.0 series). The base code is unchanged &mdash; only our subtitle patches are added on top. All upstream FATE tests pass.</p>
-  <p><strong>GIF RGBA pipeline fix.</strong> This release also fixes a bug in the new GIF RGBA quantization path where <code>ff_palette_map_init</code> internally sorts palette entries for KD-tree construction, but the returned indices were being written against the original unsorted palette. The result was all-white or garbled GIF output when encoding directly from RGBA. The fix uses the mapper's sorted palette for the output frame.</p>
-  <p>The patch series continues to be maintained against FFmpeg <code>master</code> for eventual upstream submission. See the <a href="development.html">development page</a> for patch-level detail, upstream strategy, and the full series breakdown.</p>
+  <h2>Release notes</h2>
+  <p>First stable release based on an official FFmpeg release branch. Previous builds tracked <code>master</code>, which changes daily. The <strong>n8.0.1-pgs.0</strong> tag adds only our 21 subtitle patches on top of unmodified FFmpeg 8.0.1. All upstream FATE tests pass.</p>
+  <ul>
+    <li><strong>GIF RGBA fix:</strong> the palette mapper sorts entries internally for KD-tree construction, but the encoder was writing indices against the original unsorted palette &mdash; producing blank or garbled output. Fixed by reading the sorted palette back from the mapper.</li>
+    <li><strong>FATE source fix:</strong> <code>tests/ref/fate/source</code> updated to include <code>av_clip</code> references from <code>quantize.c</code>, squashed into the originating commit on both branches.</li>
+  </ul>
 </section>
 
 <section>
   <h2>Links</h2>
   <div class="links">
     <a href="https://github.com/slartibardfast/pgs-release/releases">Releases</a>
-    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">Stable patches</a>
-    <a href="development.html">Development</a>
-    <a href="quantizers/">Quantizer Comparison</a>
-    <a href="ocr-languages/">OCR Language Coverage</a>
-    <a href="color-distance/">Color Distance Metrics</a>
-    <a href="https://trac.ffmpeg.org/ticket/3819">Bug #3819</a>
+    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">Patches (8.0.1)</a>
+    <a href="development.html">Development &amp; upstream</a>
+    <a href="quantizers/">Quantizer comparison</a>
+    <a href="ocr-languages/">OCR languages</a>
   </div>
 </section>
 
