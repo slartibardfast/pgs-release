@@ -110,8 +110,9 @@ Threads coordinate via blocking queues, semaphores, and AtomicBoolean for cancel
 ### Document Before You Work (MUST)
 Before any decision or body of work that changes design, architecture, or approach:
 1. Update the relevant `PLAN.md` or `PHASE[N].md` to record the decision and rationale
-2. Commit and push those docs before writing code
-This ensures the record reflects intent, not reconstruction. Skip only for trivial fixes with no design content.
+2. Commit and push those docs immediately, in a separate commit — do not batch with code changes
+3. After completing a plan step in code, update the plan to reflect what was actually implemented, then commit and push again
+This ensures the record reflects intent, not reconstruction. Skip only for trivial fixes with no design content. Plan files live in the top-level repository only — never inside git submodules.
 
 ### Static Builds (MUST)
 When producing release binaries, link third-party dependencies statically wherever the host OS allows:
@@ -125,11 +126,12 @@ When producing release binaries, link third-party dependencies statically wherev
 - Only platform-mandated dynamic libs are acceptable (glibc on Linux, libSystem.dylib on macOS, kernel DLLs on Windows)
 
 ### Release Versioning
-FFmpeg release tags follow the format `n{ffmpeg-version}-{base-commit}-pgs.{N}`:
-- `n8.0-aa483bc4-pgs.1` — first stable release for this FFmpeg base
+FFmpeg release tags follow the format `n{ffmpeg-version}-pgs.{N}`:
+- `n8.0.1-pgs.0` — first stable release on the 8.0.1 base
 - Increment `.pgsN` for each new release on the same FFmpeg base (build config fixes, new patches)
 - Do not reuse an existing tag for a retry — delete with `--cleanup-tag` and increment N
 - Only bump the tag after a confirmed stable build (all 6 targets green, artifacts verified)
+- Run FATE locally before cutting a release
 
 ### FFmpeg Extraction Patterns
 - **Two-patch structure:** Patch 1 creates new files (FATE trivially passes), Patch 2 refactors consumer (FATE must be bit-for-bit).
