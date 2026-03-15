@@ -211,7 +211,7 @@ footer a { color: var(--fg2); }
 <header>
   <p style="margin-bottom:1rem"><a href="./">&larr; Stable release &amp; downloads</a></p>
   <h1>Development: Upstream Patch Series</h1>
-  <p>21 patches maintained against FFmpeg <code>master</code> for upstream submission. Organised into 6 independent series (A&ndash;F) that can be reviewed in parallel. Also available rebased on the <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">8.0.1 release branch</a>.</p>
+  <p>A patch series adding subtitle format conversion to FFmpeg, maintained against <code>master</code> and the <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">8.0.1 release branch</a>. Currently 14 patches in the latest iteration (<a href="https://github.com/slartibardfast/FFmpeg/tree/history/pgs-v3">v3</a>), down from 21 in the stable release.</p>
 </header>
 
 <section>
@@ -224,29 +224,18 @@ footer a { color: var(--fg2); }
 
 <section>
   <h2>Patches</h2>
-  <p style="margin-bottom:1.5rem">Branch: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">pgs-series</a>. Series A/B/C are independent and reviewable in parallel. D depends on all three. E and F are independent additions.</p>
+  <p style="margin-bottom:1.5rem">Stable: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">pgs-series-8.0.1</a> (21 patches). Latest: <a href="https://github.com/slartibardfast/FFmpeg/tree/history/pgs-v3">v3</a> (14 patches). Series A/B are independent. C depends on B. D and E are independent additions.</p>
 
   <div class="series">
     <div class="series-header">
       <span class="series-letter">A</span>
-      <span class="series-title">PGS Encoder</span>
-      <span class="series-count">&middot; 1 patch</span>
+      <span class="series-title">PGS Encoder + Quantization Infrastructure</span>
+      <span class="series-count">&middot; 9 patches</span>
     </div>
     <ul>
-      <li>Full composition state machine with automatic Display Set type selection</li>
-      <li><code>palette_update_flag</code> for palette-only updates (no bitmap retransmission)</li>
-    </ul>
-  </div>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">B</span>
-      <span class="series-title">Quantization API</span>
-      <span class="series-count">&middot; 11 patches</span>
-    </div>
-    <ul>
+      <li>PGS encoder with composition state machine, decoder model compliance, palette animation</li>
       <li>NeuQuant, Median Cut, and ELBG quantizers via <code>av_quantize_*</code> API</li>
-      <li>OkLab perceptual colour space, palette remapping and dithering from <code>vf_paletteuse</code></li>
+      <li>OkLab colour space, palette remapping and dithering extracted from <code>vf_paletteuse</code></li>
       <li>Region-weighted palette generation for overlapping subtitle events</li>
       <li><a href="quantizers/">Algorithm comparison with PSNR and timing data</a></li>
     </ul>
@@ -254,31 +243,20 @@ footer a { color: var(--fg2); }
 
   <div class="series">
     <div class="series-header">
-      <span class="series-letter">C</span>
-      <span class="series-title">Subtitle Renderer</span>
+      <span class="series-letter">B</span>
+      <span class="series-title">Text-to-Bitmap Conversion</span>
       <span class="series-count">&middot; 2 patches</span>
     </div>
     <ul>
-      <li>Public <code>avfilter_subtitle_render_*</code> API wrapping libass</li>
-      <li>Multi-timepoint rendering for animation; stub when libass is unset</li>
+      <li>libass rendering via internal <code>ff_sub_render_*</code> API in libavfilter</li>
+      <li>Orchestration in fftools: <code>ffmpeg_enc_sub.c</code> (render, quantize, animate, coalesce)</li>
+      <li>Animation detection, palette-only fades, rect splitting, event coalescing</li>
     </ul>
   </div>
 
   <div class="series">
     <div class="series-header">
-      <span class="series-letter">D</span>
-      <span class="series-title">fftools Orchestration</span>
-      <span class="series-count">&middot; 4 patches</span>
-    </div>
-    <ul>
-      <li>Text-to-bitmap pipeline: render, quantize, encode</li>
-      <li>Rect splitting, animation detection, event coalescing</li>
-    </ul>
-  </div>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">E</span>
+      <span class="series-letter">C</span>
       <span class="series-title">GIF Encoder</span>
       <span class="series-count">&middot; 1 patch</span>
     </div>
@@ -290,14 +268,27 @@ footer a { color: var(--fg2); }
 
   <div class="series">
     <div class="series-header">
-      <span class="series-letter">F</span>
+      <span class="series-letter">D</span>
       <span class="series-title">OCR (Bitmap to Text)</span>
-      <span class="series-count">&middot; 2 patches</span>
+      <span class="series-count">&middot; 1 patch</span>
     </div>
     <ul>
-      <li>Tesseract OCR integration via <code>avfilter_subtitle_ocr_*</code> API</li>
+      <li>Tesseract OCR via internal <code>ff_sub_ocr_*</code> API in libavfilter</li>
+      <li>Orchestration in fftools: <code>ffmpeg_dec_sub.c</code> (OCR, grayscale, dedup, positioning)</li>
       <li>Bitmap deduplication for PGS fade sequences; PSM fallback for RTL scripts</li>
-      <li>Grayscale conversion (binary extraction for DVD, luminance-alpha for PGS)</li>
+    </ul>
+  </div>
+
+  <div class="series">
+    <div class="series-header">
+      <span class="series-letter">E</span>
+      <span class="series-title">Pipeline Wiring</span>
+      <span class="series-count">&middot; 1 patch</span>
+    </div>
+    <ul>
+      <li>Connects enc_sub and dec_sub into <code>ffmpeg_enc.c</code> encoding pipeline</li>
+      <li>Lifts text-to-bitmap and bitmap-to-text gates in <code>ffmpeg_mux_init.c</code></li>
+      <li>Adds <code>-sub_ocr_lang</code>, <code>-sub_ocr_datapath</code> CLI options</li>
     </ul>
   </div>
 </section>
@@ -403,8 +394,8 @@ footer a { color: var(--fg2); }
 <section>
   <h2>Links</h2>
   <div class="links">
-    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-v2">Patches (v3, latest)</a>
-    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">Patches (8.0.1 stable)</a>
+    <a href="https://github.com/slartibardfast/FFmpeg/tree/history/pgs-v3">Patches (v3, 14 patches)</a>
+    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">Patches (8.0.1 stable, 21 patches)</a>
     <a href="quantizers/">Quantizer comparison</a>
     <a href="ocr-languages/">OCR languages</a>
     <a href="color-distance/">Color distance metrics</a>
