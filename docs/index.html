@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Subtitle Format Conversion for FFmpeg</title>
+<title>FFmpeg Subtitle Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -17,6 +17,8 @@
   --accent: #0066cc;
   --green: #1a7f37;
   --card-bg: #fff;
+  --tag-bg: #e8f4e8;
+  --tag-fg: #1a7f37;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -28,6 +30,8 @@
     --accent: #4d9de0;
     --green: #56d364;
     --card-bg: #1a1a1a;
+    --tag-bg: #1a3320;
+    --tag-fg: #56d364;
   }
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -73,11 +77,15 @@ header p {
   font-size: 0.95rem;
   margin-bottom: 0.75rem;
 }
-.error-msg {
-  color: var(--fg3);
-  font-style: italic;
-  font-size: 0.9rem;
-  margin: 1.25rem 0;
+.version-tag {
+  display: inline-block;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2em 0.6em;
+  border-radius: 3px;
+  margin-right: 0.5rem;
 }
 .stats {
   display: flex;
@@ -133,59 +141,34 @@ section li::before {
   color: var(--fg3);
 }
 
-/* Prior art */
-.prior-item {
-  margin-bottom: 1rem;
+/* Feature grid */
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin: 1.25rem 0;
 }
-.prior-item strong { color: var(--fg); font-weight: 500; }
-
-/* Patch series */
-.series {
-  margin-bottom: 1.75rem;
+@media (max-width: 540px) { .feature-grid { grid-template-columns: 1fr; } }
+.feature-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.15rem;
 }
-.series-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.series-letter {
-  font-weight: 600;
-  font-size: 0.8rem;
-  color: var(--fg3);
-  width: 1.25rem;
-}
-.series-title {
-  font-weight: 500;
-  color: var(--fg);
-  font-size: 0.95rem;
-}
-.series-count {
-  color: var(--fg3);
-  font-size: 0.8rem;
-}
-.series ul {
-  margin-left: 1.75rem;
-}
-
-/* Quality */
-.quality-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
+.feature-card h3 {
   font-size: 0.9rem;
-}
-.quality-row:last-child { border-bottom: none; }
-.quality-row .style { color: var(--fg2); }
-.quality-row .psnr {
-  font-family: "SF Mono", "Fira Code", monospace;
-  font-weight: 500;
-  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
   color: var(--fg);
 }
+.feature-card p {
+  font-size: 0.82rem;
+  color: var(--fg2);
+  margin-bottom: 0;
+  line-height: 1.6;
+}
 
-/* Animation */
+/* Demo */
 .demo {
   margin: 1.5rem 0;
 }
@@ -201,31 +184,6 @@ section li::before {
   color: var(--fg2);
   line-height: 1.6;
   overflow-x: auto;
-}
-
-/* FATE */
-.fate-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.25rem 2rem;
-}
-@media (max-width: 540px) { .fate-list { grid-template-columns: 1fr; } }
-.fate-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  padding: 0.3rem 0;
-}
-.fate-check {
-  color: var(--green);
-  font-size: 0.75rem;
-  flex-shrink: 0;
-}
-.fate-name {
-  font-family: "SF Mono", "Fira Code", monospace;
-  font-size: 0.78rem;
-  color: var(--fg);
 }
 
 /* Downloads */
@@ -301,178 +259,42 @@ footer a { color: var(--fg2); }
 <div class="container">
 
 <header>
-  <h1>Subtitle Format Conversion for FFmpeg</h1>
-  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception. Converting between text (SRT, ASS, WebVTT) and bitmap (PGS, DVB, DVD, XSUB) formats has been broken for over a decade.</p>
-  <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
-  <p>This is <a href="https://trac.ffmpeg.org/ticket/3819">FFmpeg bug #3819</a>. This repository contains 21 patches that fix it &mdash; in both directions. 64 bitmap encoders (16 text decoders &times; 4 bitmap encoders) and 24 text encoders (4 bitmap decoders &times; 6 text encoders).</p>
+  <h1>FFmpeg Subtitle Tools</h1>
+  <p><span class="version-tag">Stable: FFmpeg 8.0.1</span> Pre-built FFmpeg binaries with full subtitle format conversion. Text to bitmap, bitmap to text, and everything between.</p>
+  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception &mdash; converting between text (SRT, ASS, WebVTT) and bitmap (PGS, DVB, DVD) formats has been broken for over a decade (<a href="https://trac.ffmpeg.org/ticket/3819">#3819</a>, <a href="https://trac.ffmpeg.org/ticket/6843">#6843</a>). These builds fix that.</p>
   <div class="stats">
+    <div><span class="stat-num">88</span><span class="stat-label">New conversions</span></div>
+    <div><span class="stat-num">6</span><span class="stat-label">Platforms</span></div>
     <div><span class="stat-num">21</span><span class="stat-label">Patches</span></div>
     <div><span class="stat-num">9</span><span class="stat-label">Tests</span></div>
-    <div><span class="stat-num">64</span><span class="stat-label">Bitmap encoders</span></div>
-    <div><span class="stat-num">24</span><span class="stat-label">Text encoders</span></div>
   </div>
 </header>
 
 <section>
-  <h2>Approach</h2>
-  <div class="prior-item">
-    <p><strong>Prior art.</strong> Two attempts stalled. Coza (2022) put libass in libavcodec &mdash; a dependency violation. softworkz (2021&ndash;2025) proposed full subtitle filter infrastructure across 25 patches and 89 files; design questions remain unresolved.</p>
-  </div>
-  <p><strong>This series</strong> takes the minimal path. libass (rendering) and Tesseract (OCR) already live in libavfilter. Small utility APIs there, called from fftools in the same pattern as <code>sub2video</code>, handle both directions. No filter infrastructure. No AVFrame changes.</p>
-</section>
-
-<section>
-  <h2>Patches</h2>
-  <p style="margin-bottom:1.5rem">Branch: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">pgs-series</a>. Series A/B/C are independent and reviewable in parallel. D depends on all three. E and F are independent additions.</p>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">A</span>
-      <span class="series-title">PGS Encoder</span>
-      <span class="series-count">&middot; 1 patch</span>
+  <h2>What's included</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>PGS Encoder</h3>
+      <p>Full Blu-ray PGS subtitle encoder with composition state machine, palette animation, and decoder model compliance per HDMV patent specifications.</p>
     </div>
-    <ul>
-      <li>Full composition state machine with automatic Display Set type selection</li>
-      <li><code>palette_update_flag</code> for palette-only updates (no bitmap retransmission)</li>
-    </ul>
-  </div>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">B</span>
-      <span class="series-title">Quantization API</span>
-      <span class="series-count">&middot; 11 patches</span>
+    <div class="feature-card">
+      <h3>Text to Bitmap</h3>
+      <p>Automatic conversion from any text subtitle (SRT, ASS, WebVTT, etc.) to any bitmap format. 64 new encoder pairs via libass rendering and NeuQuant quantization.</p>
     </div>
-    <ul>
-      <li>NeuQuant, Median Cut, and ELBG quantizers via <code>av_quantize_*</code> API</li>
-      <li>OkLab perceptual colour space, palette remapping and dithering from <code>vf_paletteuse</code></li>
-      <li>Region-weighted palette generation for overlapping subtitle events</li>
-      <li><a href="quantizers/">Algorithm comparison with PSNR and timing data</a></li>
-    </ul>
-  </div>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">C</span>
-      <span class="series-title">Subtitle Renderer</span>
-      <span class="series-count">&middot; 2 patches</span>
+    <div class="feature-card">
+      <h3>Bitmap to Text (OCR)</h3>
+      <p>Tesseract OCR integration for converting PGS, DVB, and DVD bitmap subtitles to SRT, ASS, or WebVTT. 24 new encoder pairs. <a href="ocr-languages/">114 languages tested</a>.</p>
     </div>
-    <ul>
-      <li>Public <code>avfilter_subtitle_render_*</code> API wrapping libass</li>
-      <li>Multi-timepoint rendering for animation; stub when libass is unset</li>
-    </ul>
-  </div>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">D</span>
-      <span class="series-title">fftools Orchestration</span>
-      <span class="series-count">&middot; 4 patches</span>
+    <div class="feature-card">
+      <h3>GIF Encoder</h3>
+      <p>Direct RGBA-to-GIF encoding without the <code>palettegen</code>+<code>paletteuse</code> filter chain. Configurable quantizer and dithering.</p>
     </div>
-    <ul>
-      <li>Text-to-bitmap pipeline: render, quantize, encode</li>
-      <li>Rect splitting, animation detection, event coalescing</li>
-    </ul>
   </div>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">E</span>
-      <span class="series-title">GIF Encoder</span>
-      <span class="series-count">&middot; 1 patch</span>
-    </div>
-    <ul>
-      <li>Direct RGBA-to-GIF encoding via <code>av_quantize_*</code> and <code>ff_palette_map_apply</code></li>
-      <li>Configurable quantizer (Median Cut default) and dithering (Floyd-Steinberg default)</li>
-    </ul>
-  </div>
-
-  <div class="series">
-    <div class="series-header">
-      <span class="series-letter">F</span>
-      <span class="series-title">OCR (Bitmap to Text)</span>
-      <span class="series-count">&middot; 2 patches</span>
-    </div>
-    <ul>
-      <li>Tesseract OCR integration via <code>avfilter_subtitle_ocr_*</code> API</li>
-      <li>Bitmap deduplication for PGS fade sequences; PSM fallback for RTL scripts</li>
-      <li>Grayscale conversion (binary extraction for DVD, luminance-alpha for PGS)</li>
-    </ul>
-  </div>
-</section>
-
-<section>
-  <h2>Quality</h2>
-  <p style="margin-bottom:1rem">Palette quantization PSNR at 256 colors (PGS maximum). NeuQuant is the default; Median Cut and ELBG available via <code>-quantize_method</code>. <a href="quantizers/">Full comparison</a>.</p>
-  <div class="quality-row"><span class="style">Simple white text</span><span class="psnr">99.99 dB (all)</span></div>
-  <div class="quality-row"><span class="style">Karaoke highlight</span><span class="psnr">99.99 dB (all)</span></div>
-  <div class="quality-row"><span class="style">Multicolour (4 regions)</span><span class="psnr">69.20 dB (Median Cut)</span></div>
-  <div class="quality-row"><span class="style">RGB gradient stress test</span><span class="psnr">35.31 dB (ELBG)</span></div>
-</section>
-
-<section>
-  <h2>Animation</h2>
-  <div class="demo">
-    <img src="demo.gif" alt="Subtitle fade encoded as PGS">
-    <pre>
-\fad(300,500) on a 3-second event at 24fps
-
-Pass 1  scan 72 frames (~2ms), classify ALPHA
-Pass 2  encode:
-  1.000s  Epoch Start   bitmap + palette (a ~ 0%)
-  1.042s  Normal PDS    a ~ 14%
-  1.292s  Normal PDS    a ~ 100%
-  (static frames skipped)
-  3.500s  Normal PDS    a ~ 80%
-  3.958s  Normal PDS    a ~ 8%
-  4.000s  Clear</pre>
-  </div>
-  <p>All animation types handled without parsing format-specific tags.</p>
-</section>
-
-<section>
-  <h2>OCR (Bitmap to Text)</h2>
-  <p>The reverse direction: PGS, DVB, DVD, and XSUB bitmap subtitles to SRT, ASS, WebVTT, or MOV text via Tesseract OCR. Tested across <a href="ocr-languages/">114 languages</a> with UDHR Article 1 roundtrip (text &rarr; PGS &rarr; text). 105 pass, 9 fail (Tesseract training data limitations).</p>
-  <div class="demo">
-    <pre>
-# PGS to SRT (bitmap dedup on by default)
-ffmpeg -i movie.mkv -map 0:s:0 -c:s srt output.srt
-
-# Japanese DVD subtitles
-ffmpeg -i movie.mkv -map 0:s:0 -c:s srt -sub_ocr_lang jpn output.srt
-
-# PGS to ASS with position mapping
-ffmpeg -i movie.mkv -map 0:s:0 -c:s ass output.ass</pre>
-  </div>
-  <p>Bitmap deduplication skips OCR on palette-only changes (PGS fade sequences). PSM fallback handles RTL and complex scripts. Per-language <code>preserve_interword_spaces</code> tuning prevents word merging in Arabic, Hebrew, and Persian.</p>
-  <p>The <code>-eng</code> release bundle includes English tessdata. Additional languages available from the <a href="https://github.com/slartibardfast/pgs-release/releases/tag/tessdata-v1">tessdata release</a>.</p>
-</section>
-
-<section>
-  <h2>Tests</h2>
-  <p style="margin-bottom:1rem">9 new FATE tests, all passing:</p>
-  <div class="fate-list">
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-pgs</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">quantize</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-fade</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-util</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-timing</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-coalesce</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-rectsplit</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">gifenc-rgba</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-ocr-roundtrip</span></div>
-  </div>
-</section>
-
-<section>
-  <h2>Spec Compliance</h2>
-  <p>Decoder model grounded in the Panasonic and Sony HDMV patents (US20090185789A1, US8638861B2, US7620297B2). Buffer sizes, transfer rates, and palette limits taken from the patents, not reverse-engineered from player behaviour.</p>
-  <p><a href="https://github.com/cubicibo/SUPer">SUPer</a> by cubicibo used as a hardware-validated reference.</p>
 </section>
 
 <section>
   <h2>Download</h2>
-  <p>Pre-built static binaries of <code>ffmpeg</code> and <code>ffprobe</code> with full subtitle conversion support. No external dependencies required. Licensed under <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
+  <p>Static binaries based on <strong>FFmpeg 8.0.1</strong> (official release branch). No external dependencies. Licensed under <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
 
   <div class="download-grid">
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
@@ -519,30 +341,55 @@ ffmpeg -i subtitles.srt -s 1920x1080 output.sup
 # PGS/DVD/DVB bitmap to SRT text (OCR)
 ffmpeg -i input.mkv -c:s srt output.mkv
 
-# PGS to ASS with position mapping
-ffmpeg -i input.mkv -c:s ass output.mkv
-
 # Japanese DVD subtitles to SRT
 ffmpeg -i input.mkv -c:s srt -sub_ocr_lang jpn output.srt
 
-# Remux subtitles without conversion
-ffmpeg -i input.mkv -c:s copy -c:v copy -c:a copy output.mp4
+# Direct RGBA to GIF (no filter pipeline)
+ffmpeg -i input.mp4 -c:v gif out.gif
 
-# Choose quantization method for PGS encoding
-ffmpeg -i input.mkv -c:s pgssub -quantize_method mediancut output.mkv</pre>
+# Remux subtitles without conversion
+ffmpeg -i input.mkv -c:s copy -c:v copy -c:a copy output.mp4</pre>
   </div>
+</section>
+
+<section>
+  <h2>Animation</h2>
+  <div class="demo">
+    <img src="demo.gif" alt="Subtitle fade encoded as PGS">
+    <pre>
+\fad(300,500) on a 3-second event at 24fps
+
+Pass 1  scan 72 frames (~2ms), classify ALPHA
+Pass 2  encode:
+  1.000s  Epoch Start   bitmap + palette (a ~ 0%)
+  1.042s  Normal PDS    a ~ 14%
+  1.292s  Normal PDS    a ~ 100%
+  (static frames skipped)
+  3.500s  Normal PDS    a ~ 80%
+  3.958s  Normal PDS    a ~ 8%
+  4.000s  Clear</pre>
+  </div>
+  <p>Fade, motion, and complex transforms handled without parsing format-specific tags. Palette-only Display Sets keep smooth fades under 1 KB each.</p>
+</section>
+
+<section>
+  <h2>About this release</h2>
+  <p>This is the first stable release based on an official FFmpeg release branch. Previous builds tracked FFmpeg <code>master</code>, which changes daily and can introduce unrelated regressions.</p>
+  <p>The <strong>n8.0.1-pgs.0</strong> tag applies 21 patches to FFmpeg's <a href="https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0.1">8.0.1 release</a> (the latest point release of the 8.0 series). The base code is unchanged &mdash; only our subtitle patches are added on top. All upstream FATE tests pass.</p>
+  <p><strong>GIF RGBA pipeline fix.</strong> This release also fixes a bug in the new GIF RGBA quantization path where <code>ff_palette_map_init</code> internally sorts palette entries for KD-tree construction, but the returned indices were being written against the original unsorted palette. The result was all-white or garbled GIF output when encoding directly from RGBA. The fix uses the mapper's sorted palette for the output frame.</p>
+  <p>The patch series continues to be maintained against FFmpeg <code>master</code> for eventual upstream submission. See the <a href="development.html">development page</a> for patch-level detail, upstream strategy, and the full series breakdown.</p>
 </section>
 
 <section>
   <h2>Links</h2>
   <div class="links">
     <a href="https://github.com/slartibardfast/pgs-release/releases">Releases</a>
-    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series">Patches</a>
-    <a href="https://trac.ffmpeg.org/ticket/3819">Bug #3819</a>
-    <a href="color-distance/">Color Distance Metrics</a>
+    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs-series-8.0.1">Stable patches</a>
+    <a href="development.html">Development</a>
     <a href="quantizers/">Quantizer Comparison</a>
     <a href="ocr-languages/">OCR Language Coverage</a>
-    <a href="https://github.com/slartibardfast/punkgraphicstream">PunkGraphicStream</a>
+    <a href="color-distance/">Color Distance Metrics</a>
+    <a href="https://trac.ffmpeg.org/ticket/3819">Bug #3819</a>
   </div>
 </section>
 
