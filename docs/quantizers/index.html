@@ -394,35 +394,6 @@ footer a { color: var(--fg2); }
 </section>
 
 <section>
-  <h2>The Story</h2>
-  <p>This patch series started with a simple goal: give FFmpeg a PGS subtitle encoder so you can convert text subtitles to Blu-ray format. That encoder needed color quantization &mdash; reducing rendered RGBA images to 256-color palettes.</p>
-
-  <p>Phase 2 introduced NeuQuant as the first quantizer, wrapped in a public <code>av_quantize_*</code> API in libavutil. It worked well, but NeuQuant is a neural network &mdash; non-deterministic, hard to reason about, and not always the best choice.</p>
-
-  <p>Phase 5 completes the quantization story by integrating two additional algorithms:</p>
-
-  <ol class="patch-list">
-    <li><strong>Median Cut extraction</strong> &mdash; The algorithm from <code>vf_palettegen</code> (FFmpeg's GIF palette generator) moved to libavutil. Core histogram + box-splitting code extracted; the filter retains its AVFilter boilerplate. Incremental API (<code>ff_mediancut_add_color</code>) bridges the gap between the filter's frame-by-frame accumulation and the library's flat-buffer interface.</li>
-    <li><strong>vf_palettegen refactor</strong> &mdash; The filter shrinks from 586 to 324 lines. All algorithm code replaced with <code>ff_mediancut_*</code> calls. Bit-for-bit identical output on all three stats modes (full/diff/single).</li>
-    <li><strong>ELBG move</strong> &mdash; ELBG was in libavcodec with <code>avpriv_</code> prefix despite having zero libavcodec dependencies. Moved to libavutil where it belongs. Five consumers updated (<code>cinepakenc</code>, <code>a64multienc</code>, <code>msvideo1enc</code>, <code>roqvideoenc</code>, <code>vf_elbg</code>).</li>
-    <li><strong>ELBG quantizer</strong> &mdash; General N-dimensional vector quantizer wrapped for 4D RGBA. Pixels become int arrays, ELBG finds codebook entries, entries become palette colors. Quality parameter maps to iteration steps.</li>
-    <li><strong>quantize_method option</strong> &mdash; New <code>-quantize_method</code> option on the PGS encoder. fftools reads it from the encoder's private data and passes it through to all quantize call sites. Three choices: <code>elbg</code>, <code>mediancut</code>, <code>neuquant</code> (default).</li>
-  </ol>
-</section>
-
-<section>
-  <h2>Usage</h2>
-  <pre class="usage"><span class="comment"># Default (NeuQuant) &mdash; fast, good quality</span>
-ffmpeg -i input.srt -c:s pgssub -s 1920x1080 output.sup
-
-<span class="comment"># Median Cut &mdash; deterministic, excellent on structured images</span>
-ffmpeg -i input.ass -c:s pgssub -quantize_method mediancut -s 1920x1080 output.sup
-
-<span class="comment"># ELBG &mdash; highest quality on complex gradients, slower</span>
-ffmpeg -i input.ass -c:s pgssub -quantize_method elbg -s 1920x1080 output.sup</pre>
-</section>
-
-<section>
   <h2>Recommendation</h2>
   <div class="takeaway">
     <p><strong>For most subtitle work: use the default (NeuQuant).</strong> Subtitles typically have fewer than 100 unique colors. All three algorithms achieve perfect or near-perfect PSNR at this complexity. NeuQuant is the fastest and produces excellent results.</p>
