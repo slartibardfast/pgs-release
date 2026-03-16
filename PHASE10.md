@@ -28,3 +28,14 @@ Buffer subtitle events with full time spans. Compute change points
 where the set of visible subtitles changes. Re-render at each
 change point. Handles overlapping events with different durations.
 See PHASE9-LOOKAHEAD.md for design.
+
+## Known Issues
+
+### ASS fade encoding regression
+ASS input with `\fad` tags produces "Invalid argument" from the
+PGS encoder after the v5 lookahead window changes. Simple SRT and
+non-animated ASS work correctly. The FATE api-pgs-fade test passes
+(uses the encoder directly), so the issue is in the fftools→encoder
+pipeline path for animated events. Needs investigation.
+
+Tracked as: v5 regression, Phase 10c side effect.
