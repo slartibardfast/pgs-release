@@ -128,12 +128,21 @@ When producing release binaries, link third-party dependencies statically wherev
 - Only platform-mandated dynamic libs are acceptable (glibc on Linux, libSystem.dylib on macOS, kernel DLLs on Windows)
 
 ### Release Versioning
-FFmpeg release tags follow the format `n{ffmpeg-version}-pgs.{N}`:
-- `n8.0.1-pgs.0` — first stable release on the 8.0.1 base
-- Increment `.pgsN` for each new release on the same FFmpeg base (build config fixes, new patches)
-- Do not reuse an existing tag for a retry — delete with `--cleanup-tag` and increment N
+FFmpeg release tags follow the format `n{ffmpeg-version}-pgsN.{build}`:
+- `n8.0.1-pgs3.0` — first build of series v3 on the 8.0.1 base
+- Increment `.build` for rebuilds on the same series (build config fixes)
+- Increment `N` for a new series version
+- Do not reuse an existing tag for a retry — delete with `--cleanup-tag` and increment build
 - Only bump the tag after a confirmed stable build (all 6 targets green, artifacts verified)
 - Run FATE locally before cutting a release
+
+### Branch and Version Discipline (MUST)
+Each patch series version gets its own branch. Never commit new-version work on an old-version branch.
+- **Branch naming:** `pgs{N}` for version N on master, `pgs{N}-8.0.1` for version N on 8.0.1
+- **History tags:** `history/pgs-v{N}` tags the final state of each version
+- **New phase = new version:** when starting a new phase of work (new features beyond review fixes), create a new branch (`pgs{N+1}`) from the current HEAD. Do not continue on `pgs{N}`.
+- **Freeze old branches:** once `history/pgs-v{N}` is tagged, `pgs{N}` is frozen. Only cherry-pick critical fixes if needed for a release.
+- **Before committing:** verify you are on the correct branch for the work being done. `git branch --show-current` should match the version you intend to modify.
 
 ### Patch Series Discipline (MUST)
 Every patch in a series MUST compile independently when applied in sequence. This is non-negotiable for upstream submission and bisectability.
