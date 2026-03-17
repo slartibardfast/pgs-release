@@ -1,6 +1,6 @@
 # Phase 13: PGS Encoder Features (v6)
 
-## Status: WIP — 5 of 8 patches committed on `pgs6-wip`
+## Status: WIP — 5 of 9 patches committed on `pgs6-wip`
 
 Encoder features beyond v5's optimisations. Exploration revealed that 13a, 13b,
 and 13c were already implemented in v5 — they needed FATE test coverage only.
@@ -90,9 +90,23 @@ fftools CLI option to split subtitle streams by forced flag:
 
 Only meaningful for bitmap→bitmap paths (PGS→PGS, DVD→PGS) where per-rect
 forced flags are set by the decoder. For text→bitmap (ASS→PGS), use
-`force_all=1` or `-disposition:s forced` instead.
+`force_all=1`, `-disposition:s forced`, or `forced_style` instead.
 
 Location: `fftools/ffmpeg_enc_sub.c`, `fftools/ffmpeg_opt.c`
+
+### Patch 9: `forced_style` AVOption — TODO
+
+Map an ASS style name to the forced subtitle flag. Events rendered with the
+matching style get `forced_on_flag=0x40`. Default style name: `"Forced"`.
+
+Enables merging forced and non-forced subtitles in a single ASS file:
+```bash
+ffmpeg -i merged.ass -c:s pgssub -s 1920x1080 out.sup
+# Events with style "Forced" automatically get forced_on_flag
+```
+
+Location: `libavcodec/pgssubenc.c` (AVOption), `fftools/ffmpeg_enc_sub.c`
+(style matching in text-to-bitmap path)
 
 ## Forced Subtitle Roundtrip (after v6)
 
@@ -107,6 +121,7 @@ Location: `fftools/ffmpeg_enc_sub.c`, `fftools/ffmpeg_opt.c`
 | PGS → MPEG-TS (force_all) | Yes | Patch 6 + Patch 7 muxer writes 0x30 |
 | Mixed → forced-only | Yes | Patch 8 `-forced_subs_filter forced` |
 | Mixed → non-forced-only | Yes | Patch 8 `-forced_subs_filter non_forced` |
+| ASS signs+dialogue → PGS | Yes | Patch 9 `forced_style` maps style to flag |
 
 ## Known Limitations (upstream, not our series)
 
@@ -129,3 +144,4 @@ complete, tagged `history/pgs-v6`.
 | 6 | — | Bidirectional forced disposition bridge | TODO |
 | 7 | — | MPEG-TS DVB forced types (demux + mux) | TODO |
 | 8 | — | `-forced_subs_filter` CLI option | TODO |
+| 9 | — | `forced_style` AVOption (ASS style → forced flag) | TODO |
