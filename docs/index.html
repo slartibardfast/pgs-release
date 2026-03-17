@@ -226,6 +226,14 @@ footer a { color: var(--fg2); }
 </header>
 
 <section>
+  <h2>Animation</h2>
+  <div class="demo">
+    <img src="demo.gif" alt="ASS fade effect encoded as PGS palette animation">
+  </div>
+  <p>ASS effects are rendered frame-by-frame and classified automatically. Fades use palette-only Display Sets &mdash; no bitmap retransmission, smooth animation within the Blu-ray decoder model. Overlapping events with different durations produce the correct Display Set sequence via an event lookahead window.</p>
+</section>
+
+<section>
   <h2>Usage</h2>
   <div class="demo">
     <pre>
@@ -240,14 +248,6 @@ ffmpeg -i input.mkv -c:s srt output.srt
 ffmpeg -i input.mp4 -c:v gif out.gif</pre>
   </div>
   <p>Conversion is automatic &mdash; set the output codec, FFmpeg handles the rest.</p>
-</section>
-
-<section>
-  <h2>Animation</h2>
-  <div class="demo">
-    <img src="demo.gif" alt="ASS fade effect encoded as PGS palette animation">
-  </div>
-  <p>ASS effects are rendered frame-by-frame and classified automatically. Fades use palette-only Display Sets &mdash; no bitmap retransmission, smooth animation within the Blu-ray decoder model. Overlapping events with different durations produce the correct Display Set sequence via an event lookahead window.</p>
 </section>
 
 <section>

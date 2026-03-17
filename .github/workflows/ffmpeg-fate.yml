@@ -64,6 +64,8 @@ jobs:
 
       - name: Run FATE tests
         working-directory: ffmpeg
+        env:
+          TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
         run: |
           make -j$(nproc) \
             fate-sub-pgs-overlap \
