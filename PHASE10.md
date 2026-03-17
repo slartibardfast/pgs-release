@@ -31,11 +31,12 @@ See PHASE9-LOOKAHEAD.md for design.
 
 ## Known Issues
 
-### ASS fade encoding regression
+### ASS fade encoding regression — FIXED
 ASS input with `\fad` tags produces "Invalid argument" from the
 PGS encoder after the v5 lookahead window changes. Simple SRT and
 non-animated ASS work correctly. The FATE api-pgs-fade test passes
 (uses the encoder directly), so the issue is in the fftools→encoder
 pipeline path for animated events. Needs investigation.
 
-Tracked as: v5 regression, Phase 10c side effect.
+Fixed: third ff_sub_render_event call in alpha animation path
+needed events_loaded guard, matching the two in Pass 1/2.
