@@ -208,6 +208,16 @@ tr.group-header td {
 .badge.skip { color: var(--yellow); background: color-mix(in srgb, var(--yellow) 12%, transparent); }
 .note { color: var(--fg3); font-style: italic; }
 
+.links {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.links a {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 footer {
   padding: 2rem 0;
   border-top: 1px solid var(--border);
@@ -374,6 +384,15 @@ footer a { color: var(--fg2); }
 <tr><td class="lang-cell"><span class="lang-name">Yiddish</span><span class="lang-code">yid</span><span class="lang-font">Noto Sans Hebrew</span></td><td dir="rtl">שלום</td><td dir="rtl">שלום</td><td class="status-cell"><span class="badge pass">PASS</span></td></tr>
     </tbody>
   </table>
+</section>
+
+<section>
+  <h2>Links</h2>
+  <div class="links">
+    <a href="../">FFmpeg Subtitle Tools</a>
+    <a href="../development.html">Development</a>
+    <a href="https://github.com/tesseract-ocr/tessdata">tessdata</a>
+  </div>
 </section>
 
 <footer>
