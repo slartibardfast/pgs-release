@@ -211,7 +211,7 @@ footer a { color: var(--fg2); }
 <header>
   <p style="margin-bottom:1rem"><a href="./">&larr; Stable release &amp; downloads</a></p>
   <h1>Development: Upstream Patch Series</h1>
-  <p>A patch series adding subtitle format conversion to FFmpeg, maintained against <code>master</code> and the <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">8.0.1 release branch</a>. Currently in its sixth iteration.</p>
+  <p>A patch series adding subtitle format conversion to FFmpeg, maintained against <code>master</code> and the <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5-8.1">8.1 release branch</a>. Currently in its sixth iteration.</p>
 </header>
 
 <section>
@@ -224,7 +224,7 @@ footer a { color: var(--fg2); }
 
 <section>
   <h2>Patches</h2>
-  <p style="margin-bottom:1.5rem">Stable: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">pgs3-8.0.1</a> (14 patches). Latest: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5">v5</a> (23 patches). Series A/B are independent. C depends on B. D and E are independent additions. F builds on A and B.</p>
+  <p style="margin-bottom:1.5rem">Stable: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5-8.1">pgs5-8.1</a> (23 patches). Latest: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5">v5</a> (23 patches). Series A/B are independent. C depends on B. D and E are independent additions. F builds on A and B.</p>
 
   <div class="series">
     <div class="series-header">
@@ -428,6 +428,7 @@ footer a { color: var(--fg2); }
       <li>Per-segment DTS in SUP muxer and per-packet DTS in fftools per HDMV timing model</li>
       <li>Event lookahead window: overlapping subtitles with different durations produce correct Display Set sequence</li>
       <li>Clear Display Sets via <code>AV_CODEC_PROP_EXPLICIT_END</code> and <code>av_subtitle_needs_clear()</code></li>
+      <li>Released as <a href="https://github.com/slartibardfast/pgs-release/releases/tag/n8.1-pgs5.0">n8.1-pgs5.0</a></li>
       <li>13 FATE tests</li>
     </ul>
   </div>
@@ -459,7 +460,7 @@ DS 4  T=7.0s  Normal       clear (B expired)</pre>
   <h2>Links</h2>
   <div class="links">
     <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5">Patches (v5, latest)</a>
-    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">Patches (8.0.1 stable)</a>
+    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5-8.1">Patches (8.1 stable)</a>
     <a href="quantizers/">Quantizer comparison</a>
     <a href="ocr-languages/">OCR languages</a>
     <a href="color-distance/">Colour distance metrics</a>
