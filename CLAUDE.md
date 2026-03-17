@@ -86,6 +86,9 @@ Threads coordinate via blocking queues, semaphores, and AtomicBoolean for cancel
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+### Honest Attribution
+When Claude simulates expert perspectives, role-plays reviewers, or generates analysis from multiple viewpoints, documentation MUST make clear these are Claude-driven prompts — not human experts. Never imply human review where none occurred. Use language like "Claude-driven review across simulated perspectives" rather than "expert panel review."
+
 ### Think Before Coding
 - State assumptions explicitly. If uncertain, ask.
 - If multiple interpretations exist, present them — don't pick silently.
