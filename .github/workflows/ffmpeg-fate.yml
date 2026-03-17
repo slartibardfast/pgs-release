@@ -64,8 +64,6 @@ jobs:
 
       - name: Run FATE tests
         working-directory: ffmpeg
-        env:
-          TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
         run: |
           make -j$(nproc) \
             fate-sub-pgs-overlap \
@@ -78,5 +76,11 @@ jobs:
             fate-api-pgs-palette-delta \
             fate-api-pgs-dts \
             fate-api-pgs-overlap-verify \
-            fate-gifenc-rgba \
-            fate-sub-ocr-roundtrip
+            fate-gifenc-rgba
+
+      - name: Run OCR roundtrip test
+        working-directory: ffmpeg
+        run: |
+          # Ubuntu 24.04 tessdata path
+          export TESSDATA_PREFIX=$(find /usr/share/tesseract-ocr -name eng.traineddata -printf '%h' 2>/dev/null || echo "/usr/share/tesseract-ocr/5/tessdata")
+          make fate-sub-ocr-roundtrip
