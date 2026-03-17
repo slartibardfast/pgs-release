@@ -211,7 +211,7 @@ footer a { color: var(--fg2); }
 <header>
   <p style="margin-bottom:1rem"><a href="./">&larr; Stable release &amp; downloads</a></p>
   <h1>Development: Upstream Patch Series</h1>
-  <p>A patch series adding subtitle format conversion to FFmpeg, maintained against <code>master</code> and the <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">8.0.1 release branch</a>. Currently evolving through its fifth iteration.</p>
+  <p>A patch series adding subtitle format conversion to FFmpeg, maintained against <code>master</code> and the <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">8.0.1 release branch</a>. Currently in its sixth iteration.</p>
 </header>
 
 <section>
@@ -224,16 +224,17 @@ footer a { color: var(--fg2); }
 
 <section>
   <h2>Patches</h2>
-  <p style="margin-bottom:1.5rem">Stable: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">pgs3-8.0.1</a> (14 patches). Latest: <a href="https://github.com/slartibardfast/FFmpeg/tree/history/pgs-v3">v3</a> (14 patches). Series A/B are independent. C depends on B. D and E are independent additions.</p>
+  <p style="margin-bottom:1.5rem">Stable: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">pgs3-8.0.1</a> (14 patches). Latest: <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5">v5</a> (23 patches). Series A/B are independent. C depends on B. D and E are independent additions. F builds on A and B.</p>
 
   <div class="series">
     <div class="series-header">
       <span class="series-letter">A</span>
       <span class="series-title">PGS Encoder + Quantization Infrastructure</span>
-      <span class="series-count">&middot; 9 patches</span>
+      <span class="series-count">&middot; 11 patches</span>
     </div>
     <ul>
       <li>PGS encoder with composition state machine, decoder model compliance, palette animation</li>
+      <li>Palette delta encoding: only changed PDS entries written (83% reduction for single-entry fades)</li>
       <li>NeuQuant, Median Cut, and ELBG quantizers via <code>av_quantize_*</code> API</li>
       <li>OkLab colour space, palette remapping and dithering extracted from <code>vf_paletteuse</code></li>
       <li>Region-weighted palette generation for overlapping subtitle events</li>
@@ -245,12 +246,14 @@ footer a { color: var(--fg2); }
     <div class="series-header">
       <span class="series-letter">B</span>
       <span class="series-title">Text-to-Bitmap Conversion</span>
-      <span class="series-count">&middot; 2 patches</span>
+      <span class="series-count">&middot; 5 patches</span>
     </div>
     <ul>
       <li>libass rendering via internal <code>ff_sub_render_*</code> API in libavfilter</li>
+      <li>Subtitle bitmap utilities in <code>libavutil/sub_util.{h,c}</code></li>
       <li>Orchestration in fftools: <code>ffmpeg_enc_sub.c</code> (render, quantize, animate, coalesce)</li>
-      <li>Animation detection, palette-only fades, rect splitting, event coalescing</li>
+      <li>Event lookahead window for overlapping subtitles with different durations</li>
+      <li>Per-packet DTS per HDMV decoder timing model</li>
     </ul>
   </div>
 
@@ -270,7 +273,7 @@ footer a { color: var(--fg2); }
     <div class="series-header">
       <span class="series-letter">D</span>
       <span class="series-title">OCR (Bitmap to Text)</span>
-      <span class="series-count">&middot; 1 patch</span>
+      <span class="series-count">&middot; 2 patches</span>
     </div>
     <ul>
       <li>Tesseract OCR via internal <code>ff_sub_ocr_*</code> API in libavfilter</li>
@@ -282,20 +285,32 @@ footer a { color: var(--fg2); }
   <div class="series">
     <div class="series-header">
       <span class="series-letter">E</span>
-      <span class="series-title">Pipeline Wiring</span>
-      <span class="series-count">&middot; 1 patch</span>
+      <span class="series-title">Pipeline Wiring + Muxer</span>
+      <span class="series-count">&middot; 2 patches</span>
     </div>
     <ul>
-      <li>Connects enc_sub and dec_sub into <code>ffmpeg_enc.c</code> encoding pipeline</li>
-      <li>Lifts text-to-bitmap and bitmap-to-text gates in <code>ffmpeg_mux_init.c</code></li>
+      <li>Connects enc_sub and dec_sub into <code>ffmpeg_enc.c</code> encoding pipeline with clear Display Sets via <code>AV_CODEC_PROP_EXPLICIT_END</code></li>
+      <li>Per-segment DTS in SUP muxer per HDMV timing model</li>
       <li>Adds <code>-sub_ocr_lang</code>, <code>-sub_ocr_datapath</code> CLI options</li>
+    </ul>
+  </div>
+
+  <div class="series">
+    <div class="series-header">
+      <span class="series-letter">F</span>
+      <span class="series-title">Tests + Documentation</span>
+      <span class="series-count">&middot; 2 patches</span>
+    </div>
+    <ul>
+      <li>13 FATE tests covering encoder, quantization, animation, overlap, DTS, palette delta, OCR, and GIF</li>
+      <li><code>doc/encoders.texi</code> (PGS), <code>doc/ffmpeg.texi</code> (OCR options), Changelog</li>
     </ul>
   </div>
 </section>
 
 <section>
   <h2>Quality</h2>
-  <p style="margin-bottom:1rem">Palette quantization PSNR at 256 colors (PGS maximum). NeuQuant is the default; Median Cut and ELBG available via <code>-quantize_method</code>. <a href="quantizers/">Full comparison</a>.</p>
+  <p style="margin-bottom:1rem">Palette quantization PSNR at 256 colours (PGS maximum). NeuQuant is the default; Median Cut and ELBG available via <code>-quantize_method</code>. <a href="quantizers/">Full comparison</a>.</p>
   <div class="quality-row"><span class="style">Simple white text</span><span class="psnr">99.99 dB (all)</span></div>
   <div class="quality-row"><span class="style">Karaoke highlight</span><span class="psnr">99.99 dB (all)</span></div>
   <div class="quality-row"><span class="style">Multicolour (4 regions)</span><span class="psnr">69.20 dB (Median Cut)</span></div>
@@ -309,15 +324,19 @@ footer a { color: var(--fg2); }
 
 <section>
   <h2>Tests</h2>
-  <p style="margin-bottom:1rem">9 new FATE tests, all passing:</p>
+  <p style="margin-bottom:1rem">13 new FATE tests, all passing:</p>
   <div class="fate-list">
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-pgs</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-pgs-overlap</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">quantize</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-fade</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-util</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-timing</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-coalesce</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-rectsplit</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-palette-delta</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-dts</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-overlap-verify</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">gifenc-rgba</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-ocr-roundtrip</span></div>
   </div>
@@ -401,14 +420,15 @@ footer a { color: var(--fg2); }
   <div class="series">
     <div class="series-header">
       <span class="series-letter"><a href="https://github.com/slartibardfast/FFmpeg/tree/pgs5">v5</a></span>
-      <span class="series-title">Encoder optimizations</span>
-      <span class="series-count">&middot; 24 patches</span>
+      <span class="series-title">Encoder optimisations</span>
+      <span class="series-count">&middot; 23 patches</span>
     </div>
     <ul>
-      <li>Palette delta encoding: only changed PDS entries written (83% reduction for single-entry changes)</li>
+      <li>Palette delta encoding: only changed PDS entries written (83% reduction for single-entry fades)</li>
       <li>Per-segment DTS in SUP muxer and per-packet DTS in fftools per HDMV timing model</li>
       <li>Event lookahead window: overlapping subtitles with different durations produce correct Display Set sequence</li>
-      <li>11 FATE tests</li>
+      <li>Clear Display Sets via <code>AV_CODEC_PROP_EXPLICIT_END</code> and <code>av_subtitle_needs_clear()</code></li>
+      <li>13 FATE tests</li>
     </ul>
   </div>
 </section>
@@ -442,7 +462,7 @@ DS 4  T=7.0s  Normal       clear (B expired)</pre>
     <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">Patches (8.0.1 stable)</a>
     <a href="quantizers/">Quantizer comparison</a>
     <a href="ocr-languages/">OCR languages</a>
-    <a href="color-distance/">Color distance metrics</a>
+    <a href="color-distance/">Colour distance metrics</a>
     <a href="https://trac.ffmpeg.org/ticket/3819">#3819</a>
     <a href="https://trac.ffmpeg.org/ticket/6843">#6843</a>
   </div>
