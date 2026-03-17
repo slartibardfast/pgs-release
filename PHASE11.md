@@ -30,52 +30,59 @@ varies between pages.
 1. **British English in prose, American in code.** Prose: colour, organisation,
    recognised, optimisation. Code identifiers, CSS properties, API names: color,
    quantize, etc. Never change `color-distance/` directory name or CSS `color:`.
-2. **One commit per page.** Easier to review and revert.
-3. **No new content beyond what exists.** Update stale references, fix spelling,
+2. **Exception: "quantizer" and "quantization"** always American — follows the
+   FFmpeg API name `av_quantize_*`. Added to CLAUDE.md Website Style rule.
+3. **One commit per page.** Easier to review and revert.
+4. **No new content beyond what exists.** Update stale references, fix spelling,
    align structure. Do not add new sections or features.
 
 ## Steps
 
-### 11a: development.html
+### 11a: development.html — DONE
 
-- [ ] Update header: "fifth" → current iteration count still fine, but fix
-  "Latest" link from v3 to v5 with correct patch count
-- [ ] Update Patches section: add v5 patches to A-E structure (palette delta
-  goes in A, DTS/lookahead/overlap go in B, clear DS in E, FATE test patch standalone)
-- [ ] Update v4 patch count from 18 to match (already correct)
-- [ ] Update FATE count: 9 → 13
-- [ ] Update FATE list: add api-pgs-palette-delta, api-pgs-dts,
-  api-pgs-overlap-verify, sub-pgs-overlap
-- [ ] British English pass on all prose
-- [ ] Verify all branch links point to correct remotes
+- [x] Header: "fifth" → "sixth" iteration, Latest v3 → v5 (23 patches)
+- [x] Patches section: A(11), B(5), C(1), D(2), E(2), F(2) = 23
+  - A: added palette delta bullet
+  - B: added sub_util, lookahead, per-packet DTS
+  - D: 1 → 2 patches
+  - E: renamed "Pipeline Wiring + Muxer", added SUP muxer DTS, clear DS
+  - F: new series — Tests + Documentation
+- [x] FATE count: 9 → 13, added 4 new test names
+- [x] Series v5 evolution: 24 → 23 patches, 11 → 13 FATE, "optimisations"
+- [x] British English: colours, Colour distance link
+- [x] CLAUDE.md: added Website Style rule with quantizer exception
 
-### 11b: index.html
+### 11b: index.html — DONE
 
-- [ ] British English pass on prose (link text "Color distance" → "Colour distance")
-- [ ] Verify version tag is current (n8.0.1-pgs3.0 — correct until next release)
+- [x] "Color distance" → "Colour distance" link text
+- [x] Version tag n8.0.1-pgs3.0 confirmed current
 
-### 11c: quantizers/index.html
+### 11c: quantizers/index.html — DONE
 
-- [ ] Update patches link: pgs3 → pgs5
-- [ ] British English pass: "Color Quantization" title, "color quantization"
-  prose, "16-color palette" table headers, "high-colour-count" (already British)
-- [ ] Prose "color" → "colour" where not a code identifier
+- [x] Patches link: pgs3 → pgs5
+- [x] Title: "Colour Quantization" (colour for prose, quantization exception)
+- [x] All table headings/cells: "color" → "colour" (16/64/256-colour palette)
+- [x] Prose: unique colours, many colours
+- [x] "Colour distance metrics" link text
 
-### 11d: color-distance/index.html
+### 11d: color-distance/index.html — DONE
 
-- [ ] Fix dead link: phase4-dvd-investigation branch → remove or point to valid ref
-- [ ] British English pass: title "Color Distance" → "Colour Distance",
-  prose instances. Keep code identifiers (sRGB, OkLab), CSS, and JS unchanged.
-  Keep paper citation in original language ("Color Research & Application")
-- [ ] Add back-link consistency if missing
+- [x] Dead link removed: phase4-dvd-investigation branch
+- [x] Title: "Colour Distance Metrics"
+- [x] Prose: colours, nearest-neighbour, grey
+- [x] JS table header: "Colour"
+- [x] Paper citation kept in original language
 
-### 11e: ocr-languages/index.html
+### 11e: ocr-languages/index.html — DONE
 
-- [ ] British English pass (minimal — mostly data)
-- [ ] Add Links section before footer for consistency with other pages
+- [x] Added Links section with CSS (.links) before footer
+- [x] Links: main site, development, tessdata
+- [x] No prose "color" instances to fix (all CSS)
 
-### 11f: Cross-page review
+### 11f: Cross-page review — DONE
 
-- [ ] Verify all inter-page links work
-- [ ] Verify footer style consistency
-- [ ] Final read-through of all five pages
+- [x] All inter-page links verified (all exist)
+- [x] All pages have back-links to parent
+- [x] All pages have Links section before footer
+- [x] All pages have footer
+- [x] No dead links
