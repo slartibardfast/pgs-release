@@ -1,0 +1,47 @@
+name: FFmpeg FATE
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  fate:
+    name: Build & FATE
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm pkg-config libass-dev libtesseract-dev tesseract-ocr-eng
+
+      - name: Configure FFmpeg
+        working-directory: ffmpeg
+        run: ./configure --disable-doc --enable-libass --enable-libtesseract
+
+      - name: Build FFmpeg
+        working-directory: ffmpeg
+        run: make -j$(nproc)
+
+      - name: Run FATE tests
+        working-directory: ffmpeg
+        run: |
+          make -j$(nproc) \
+            fate-sub-pgs-overlap \
+            fate-quantize \
+            fate-api-pgs-fade \
+            fate-api-pgs-animation-util \
+            fate-api-pgs-animation-timing \
+            fate-api-pgs-coalesce \
+            fate-api-pgs-rectsplit \
+            fate-api-pgs-palette-delta \
+            fate-api-pgs-dts \
+            fate-api-pgs-overlap-verify \
+            fate-gifenc-rgba \
+            fate-sub-ocr-roundtrip

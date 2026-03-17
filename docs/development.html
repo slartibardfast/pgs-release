@@ -323,23 +323,44 @@ footer a { color: var(--fg2); }
 </section>
 
 <section>
-  <h2>Tests</h2>
-  <p style="margin-bottom:1rem">13 new FATE tests, all passing:</p>
-  <div class="fate-list">
+  <h2 id="tests">Tests</h2>
+  <p style="margin-bottom:0.5rem">13 FATE tests run on every push via CI. 12 are self-contained; <code>sub-pgs</code> uses fate-suite samples. <a href="https://github.com/slartibardfast/pgs-release/actions/workflows/ffmpeg-fate.yml"><img src="https://github.com/slartibardfast/pgs-release/actions/workflows/ffmpeg-fate.yml/badge.svg" alt="FFmpeg FATE" style="vertical-align:middle"></a></p>
+
+  <p style="margin-bottom:0.25rem; font-weight:500; color:var(--fg)">PGS encoder</p>
+  <div class="fate-list" style="margin-bottom:1rem">
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-pgs</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-pgs-overlap</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">quantize</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-fade</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-palette-delta</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-dts</span></div>
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-overlap-verify</span></div>
+  </div>
+
+  <p style="margin-bottom:0.25rem; font-weight:500; color:var(--fg)">Animation &amp; pipeline</p>
+  <div class="fate-list" style="margin-bottom:1rem">
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-util</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-animation-timing</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-coalesce</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-rectsplit</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-palette-delta</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-dts</span></div>
-    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">api-pgs-overlap-verify</span></div>
+  </div>
+
+  <p style="margin-bottom:0.25rem; font-weight:500; color:var(--fg)">Quantization &amp; GIF</p>
+  <div class="fate-list" style="margin-bottom:1rem">
+    <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">quantize</span></div>
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">gifenc-rgba</span></div>
+  </div>
+
+  <p style="margin-bottom:0.25rem; font-weight:500; color:var(--fg)">OCR</p>
+  <div class="fate-list" style="margin-bottom:1rem">
     <div class="fate-item"><span class="fate-check">&#10003;</span><span class="fate-name">sub-ocr-roundtrip</span></div>
   </div>
+  <p style="font-size:0.82rem">Full OCR language coverage (114 languages, 92% pass rate) on the <a href="ocr-languages/">OCR languages page</a>.</p>
+
+  <p style="margin-top:1.25rem; font-weight:500; color:var(--fg); margin-bottom:0.25rem">Known upstream failures (not our patches)</p>
+  <div class="fate-list">
+    <div class="fate-item"><span class="fate-check" style="color:var(--fg3)">&#10007;</span><span class="fate-name" style="color:var(--fg3)">sws-unscaled</span></div>
+  </div>
+  <p style="font-size:0.82rem; color:var(--fg3)">Fails on clean FFmpeg 8.1 without our patches. Pre-existing libswscale issue.</p>
 </section>
 
 <section>
