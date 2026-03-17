@@ -213,15 +213,39 @@ footer a { color: var(--fg2); }
 
 <header>
   <h1>FFmpeg Subtitle Tools</h1>
-  <p><span class="version-tag">n8.0.1-pgs.0</span> 21 patches on <a href="https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0.1">FFmpeg 8.0.1</a>. Pre-built static binaries for 6 platforms.</p>
-  <p>FFmpeg can transcode between virtually any audio and video format. Subtitles are the exception.</p>
+  <p><span class="version-tag">n8.0.1-pgs3.0</span> Pre-built FFmpeg with full subtitle format conversion. Text to bitmap, bitmap to text, and everything between.</p>
   <div class="error-msg">"Subtitle encoding currently only possible from text to text or bitmap to bitmap"</div>
-  <p>That's <a href="https://trac.ffmpeg.org/ticket/3819">#3819</a>, open since 2014. These builds fix it &mdash; 88 new conversion pairs across both directions, plus a PGS encoder (<a href="https://trac.ffmpeg.org/ticket/6843">#6843</a>) and direct RGBA-to-GIF encoding.</p>
+  <p>That's <a href="https://trac.ffmpeg.org/ticket/3819">#3819</a>, open since 2014. These builds fix it &mdash; 88 new conversion pairs, a PGS encoder (<a href="https://trac.ffmpeg.org/ticket/6843">#6843</a>), and direct RGBA-to-GIF encoding.</p>
 </header>
 
 <section>
+  <h2>Usage</h2>
+  <div class="demo">
+    <pre>
+# SRT/ASS/WebVTT to Blu-ray PGS
+ffmpeg -i subtitles.srt -s 1920x1080 output.sup
+ffmpeg -i input.mkv -c:s pgssub -c:v copy -c:a copy output.mkv
+
+# PGS/DVD/DVB bitmap to SRT via OCR
+ffmpeg -i input.mkv -c:s srt output.srt
+
+# RGBA to GIF without filter pipeline
+ffmpeg -i input.mp4 -c:v gif out.gif</pre>
+  </div>
+  <p>Conversion is automatic &mdash; set the output codec, FFmpeg handles the rest.</p>
+</section>
+
+<section>
+  <h2>Animation</h2>
+  <div class="demo">
+    <img src="demo.gif" alt="ASS fade effect encoded as PGS palette animation">
+  </div>
+  <p>ASS effects are rendered frame-by-frame and classified automatically. Fades use palette-only Display Sets &mdash; no bitmap retransmission, smooth animation within the Blu-ray decoder model. Overlapping events with different durations produce the correct Display Set sequence via an event lookahead window.</p>
+</section>
+
+<section>
   <h2>Download</h2>
-  <p>Static binaries of <code>ffmpeg</code> and <code>ffprobe</code>. No external dependencies. <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
+  <p>Static binaries on <a href="https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0.1">FFmpeg 8.0.1</a>. No dependencies. <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL 2.1</a>.</p>
 
   <div class="download-grid">
     <a class="download-card" href="https://github.com/slartibardfast/pgs-release/releases">
@@ -254,52 +278,11 @@ footer a { color: var(--fg2); }
 </section>
 
 <section>
-  <h2>Usage</h2>
-  <div class="demo">
-    <pre>
-# SRT/ASS/WebVTT to Blu-ray PGS
-ffmpeg -i input.mkv -c:s pgssub -c:v copy -c:a copy output.mkv
-ffmpeg -i subtitles.srt -s 1920x1080 output.sup
-
-# PGS/DVD/DVB bitmap to SRT via OCR
-ffmpeg -i input.mkv -c:s srt output.srt
-ffmpeg -i input.mkv -c:s srt -sub_ocr_lang jpn output.srt
-
-# RGBA to GIF without filter pipeline
-ffmpeg -i input.mp4 -c:v gif out.gif</pre>
-  </div>
-  <p>Any text subtitle decoder to any bitmap encoder, and vice versa. Conversion is automatic &mdash; just set the output codec.</p>
-</section>
-
-<section>
-  <h2>Animation</h2>
-  <div class="demo">
-    <img src="demo.gif" alt="ASS fade effect encoded as PGS palette animation">
-  </div>
-  <p>ASS effects like <code>\fad</code>, <code>\move</code>, and colour transforms are rendered frame-by-frame and classified automatically. Fades use palette-only Display Sets so smooth animation fits within the Blu-ray decoder model. No format-specific tag parsing required.</p>
-
-  <div class="demo">
-    <img src="overlap-demo.gif" alt="Overlapping subtitles with different durations handled correctly">
-  </div>
-  <p>Overlapping events with different durations produce the correct Display Set sequence: each transition re-renders only the currently-visible events.</p>
-</section>
-
-<section>
-  <h2>Release notes</h2>
-  <p>First stable release based on an official FFmpeg release branch. Previous builds tracked <code>master</code>, which changes daily. The <strong>n8.0.1-pgs.0</strong> tag adds only our 21 subtitle patches on top of unmodified FFmpeg 8.0.1. All upstream FATE tests pass.</p>
-  <ul>
-    <li><strong>GIF RGBA fix:</strong> the palette mapper sorts entries internally for KD-tree construction, but the encoder was writing indices against the original unsorted palette &mdash; producing blank or garbled output. Fixed by reading the sorted palette back from the mapper.</li>
-    <li><strong>FATE source fix:</strong> <code>tests/ref/fate/source</code> updated to include <code>av_clip</code> references from <code>quantize.c</code>, squashed into the originating commit on both branches.</li>
-  </ul>
-</section>
-
-<section>
   <h2>Links</h2>
   <div class="links">
     <a href="https://github.com/slartibardfast/pgs-release/releases">Releases</a>
-    <a href="https://github.com/slartibardfast/FFmpeg/tree/pgs3-8.0.1">Patches (8.0.1)</a>
-    <a href="development.html">Development &amp; upstream</a>
-    <a href="quantizers/">Quantizer comparison</a>
+    <a href="development.html">Development</a>
+    <a href="quantizers/">Quantizers</a>
     <a href="ocr-languages/">OCR languages</a>
     <a href="color-distance/">Color distance</a>
   </div>
