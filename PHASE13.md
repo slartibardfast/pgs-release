@@ -1,125 +1,131 @@
 # Phase 13: PGS Encoder Features (v6)
 
-## Status: WIP
+## Status: WIP — 5 of 8 patches committed on `pgs6-wip`
 
-Encoder features beyond v5's optimisations. Ordered by dependency — each step
-builds on the previous. Together they bring the encoder to full HDMV spec
-coverage and enable random-access seeking into PGS streams.
+Encoder features beyond v5's optimisations. Exploration revealed that 13a, 13b,
+and 13c were already implemented in v5 — they needed FATE test coverage only.
+The v6 scope expanded to include a comprehensive forced subtitle pipeline
+(disposition bridging, DVB support, stream splitting) alongside the originally
+planned features.
 
-## 13a: Palette Reuse — PLANNED
+## 13a: Palette Reuse — DONE (v5, test added in v6)
 
-Extend v5's palette delta encoding. When the full palette hasn't changed between
-Display Sets, omit the PDS segment entirely and reference the previous palette
-via `palette_version`. Currently every DS includes at least a delta PDS.
+The encoder already omits PDS when the palette hasn't changed. A position-only
+Normal DS writes PCS+END only — no PDS, ODS, or WDS. The `palette_version`
+field correctly references the previous palette.
 
-**Depends on:** v5 palette delta cache (already tracks previous palette state).
+**FATE test:** `api-pgs-palette-reuse` — Patch 1
 
-**Synergy with 13e:** Less PDS data means more CDB headroom for rate control.
+## 13b: Multiple Composition Objects — DONE (v5, test added in v6)
 
-**Verification:** FATE test comparing PDS byte count across a sequence of
-Display Sets with identical palettes. Expected: zero PDS bytes after the first DS
-in a static-palette run.
+The encoder handles 2 non-overlapping rects with correct PCS composition
+descriptors, 2 ODS segments, 2 WDS window definitions, and shared PDS. Rect
+splitting remains in fftools (`ff_sub_find_gap`) — the correct architectural
+layer since splitting operates on pre-quantisation RGBA data.
 
-## 13b: Multiple Composition Objects — PLANNED
+**FATE test:** `api-pgs-multi-object` — Patch 2
 
-PGS allows up to two composition objects per Display Set (HDMV spec limit).
-Currently the encoder composites all subtitle regions into a single bitmap.
-Promote rect splitting from fftools into the encoder: when two non-overlapping
-regions exist (e.g. top and bottom of screen), encode as two separate Object
-Definition Segments sharing one palette.
+## 13c: Acquisition Point Display Sets — DONE (v5, test added in v6)
 
-**Depends on:** Existing rect splitting logic in `ffmpeg_enc_sub.c`. This moves
-the split decision into the encoder so it works for all consumers, not just
-fftools.
+The `ap_interval` AVOption (0–60000ms) promotes Normal DS to Acquisition Point
+when the interval has elapsed. AP DS contains full PDS + ODS + WDS for
+random-access seeking. Composition state 0x40 (not 0x80 as incorrectly stated
+in the original plan — 0x80 is Epoch Start).
 
-**Synergy with 13c:** AP Display Sets must retransmit all active objects. With
-two objects, only the changed one needs a new ODS on Normal DS — the other
-is referenced by `object_id` without retransmission.
+**FATE test:** `api-pgs-ap-interval` — Patch 3
 
-**Synergy with 13d:** Forced subtitles can be a separate object from non-forced
-content in the same Display Set.
+## 13d: Forced Subtitles — DONE
 
-**Verification:** FATE test with two spatially separated subtitle regions.
-Expected: two ODS segments in the output, shared PDS, both `object_id` values
-referenced in the PCS composition descriptor.
+Added `force_all` boolean AVOption. When set, all composition objects are marked
+forced (0x40 in PCS composition descriptor) regardless of per-rect flags. The
+existing per-rect `AV_SUBTITLE_FLAG_FORCED` behaviour is preserved when
+`force_all` is not set.
 
-## 13c: Acquisition Point Display Sets — PLANNED
+**FATE test:** `api-pgs-forced` — Patch 4
 
-The third composition state type. Currently the encoder only emits Epoch Start
-(full state reset) and Normal (incremental update). Acquisition Point DS
-retransmit the current composition state without starting a new epoch — enabling
-random-access seeking into a PGS stream.
+## 13e: Rate Control — DONE
 
-The encoder needs to periodically emit AP DS at a configurable interval (e.g.
-every N seconds or every N Display Sets). The AP DS must include:
-- PCS with `composition_state = 0x80` (Acquisition Point)
-- Full PDS (not delta — the decoder has no prior state after a seek)
-- All active ODS (both objects if 13b is implemented)
+Added `max_cdb_usage` AVOption (0.0–1.0, default 0.0 = disabled). Before
+encoding each Display Set, the encoder estimates the DS size (worst-case
+uncompressed) and computes CDB headroom (accounting for refill at Rx = 2 MB/s
+since the last encode). Events exceeding the threshold are dropped with a
+warning.
 
-**Depends on:** 13b (multi-object) so AP DS retransmits the correct set of objects.
-13a (palette reuse) so AP DS knows to force a full PDS even when palettes haven't
-changed.
+**Design decision:** Drop-with-warning rather than deferral. The HDMV subtitle
+encoding API (`avcodec_encode_subtitle`) is synchronous — there's no EAGAIN
+mechanism. Full deferral would require an event re-queue in fftools, deferred
+to v7 if needed. Drop-with-warning matches hardware authoring tool behaviour.
 
-**Synergy with 13e:** AP DS are large (full retransmission). Rate control must
-account for their periodic CDB impact.
+**FATE test:** `api-pgs-rate-control` — Patch 5
 
-**AVOption:** `ap_interval` already exists (added in v4, currently unused).
-Wire it up.
+## 13f: Forced Subtitle Pipeline — IN PROGRESS
 
-**Verification:** FATE test seeking into a PGS stream at an AP DS boundary.
-Expected: correct rendering from the seek point without needing the Epoch Start.
+Three patches completing the forced subtitle pipeline end-to-end:
 
-## 13d: Forced Subtitles — PLANNED
+### Patch 6: Bidirectional Disposition Bridge — TODO
 
-Set the `forced_on_flag` in the PCS composition descriptor for subtitle events
-marked as forced. Forced subtitles display even when the user has subtitles
-disabled (used for foreign-language dialogue, signs, on-screen text).
+Bridge forced flags between stream-level and rect-level:
+- **Input→rects:** `AV_DISPOSITION_FORCED` on input stream →
+  `AV_SUBTITLE_FLAG_FORCED` on all decoded rects
+- **Encoder→output:** `force_all=1` on encoder → `AV_DISPOSITION_FORCED`
+  on output stream (so MKV FlagForced, MPEG-TS subtitling_type are set)
 
-**Depends on:** 13b is useful but not required. With multi-object, forced and
-non-forced content can coexist as separate objects in one DS. Without it, the
-entire DS is either forced or not.
+Location: `fftools/ffmpeg_enc_sub.c`
 
-**Input:** The `forced` field on `AVSubtitleRect` (already exists in FFmpeg's
-subtitle API).
+### Patch 7: MPEG-TS DVB Forced Subtitle Types — TODO
 
-**AVOption:** `force_all` flag to mark all events as forced (common workflow
-for director's commentary tracks).
+Standalone upstream fix. The MPEG-TS demuxer doesn't map DVB subtitling_type
+0x30–0x35 (forced) to `AV_DISPOSITION_FORCED`. The muxer doesn't write 0x30
+when the disposition is set. Both directions, mirroring the existing
+hearing-impaired pattern.
 
-**Verification:** FATE test encoding a forced event, decoding with the PGS
-decoder, verifying the forced flag propagates through the roundtrip.
+Location: `libavformat/mpegts.c`, `libavformat/mpegtsenc.c`
 
-## 13e: Rate Control — PLANNED
+### Patch 8: `-forced_subs_filter` CLI Option — TODO
 
-The decoder model (CDB: 1 MB leaky bucket at 16 Mbps, DOB: 4 MB) is tracked
-in v5 but doesn't back-pressure the encoder. When a Display Set would overflow
-the CDB:
+fftools CLI option to split subtitle streams by forced flag:
+- `forced` — encode only forced events
+- `non_forced` — encode only non-forced events (unique — decoder has no equivalent)
+- `all` — encode all events (default)
 
-1. Defer the DS to a later PTS where the buffer has drained sufficiently
-2. If deferral exceeds a threshold, split the DS (reduce bitmap quality or
-   resolution) to fit
-3. Log a warning when deferral or splitting occurs
+Only meaningful for bitmap→bitmap paths (PGS→PGS, DVD→PGS) where per-rect
+forced flags are set by the decoder. For text→bitmap (ASS→PGS), use
+`force_all=1` or `-disposition:s forced` instead.
 
-AP DS intervals (13c) must be factored into the budget — they're the largest
-periodic cost.
+Location: `fftools/ffmpeg_enc_sub.c`, `fftools/ffmpeg_opt.c`
 
-**Depends on:** All previous steps. CDB occupancy depends on PDS size (13a),
-ODS count and size (13b), AP frequency (13c). Without these features in place,
-rate control can't accurately model the buffer.
+## Forced Subtitle Roundtrip (after v6)
 
-**Synergy:** This is the capstone. With palette reuse reducing PDS overhead,
-multi-object reducing per-update ODS size, and AP intervals configurable,
-rate control can make informed decisions about when to defer or degrade.
+| Source → Target | Works? | How |
+|----------------|--------|-----|
+| PGS → PGS | Yes | rect→flags preserved (v5) |
+| DVD → PGS | Yes | dvdsubdec sets rect→flags (v5) |
+| MKV DVB → PGS | Yes | Patch 6 bridges disposition |
+| MPEG-TS DVB → PGS | Yes | Patch 7 + Patch 6 |
+| ASS/SRT → PGS | Yes | `force_all=1` (Patch 4) or `-disposition:s forced` (Patch 6) |
+| PGS → MKV (force_all) | Yes | Patch 6 sets output disposition → matroskaenc FlagForced |
+| PGS → MPEG-TS (force_all) | Yes | Patch 6 + Patch 7 muxer writes 0x30 |
+| Mixed → forced-only | Yes | Patch 8 `-forced_subs_filter forced` |
+| Mixed → non-forced-only | Yes | Patch 8 `-forced_subs_filter non_forced` |
 
-**AVOption:** `max_cdb_usage` threshold (0.0–1.0, default 0.9) for the
-deferral trigger.
+## Known Limitations (upstream, not our series)
 
-**Verification:** FATE test with a rapid sequence of large bitmap subtitles
-that would overflow CDB without rate control. Expected: encoder defers or
-splits, output validates against decoder model, no CDB overflow.
+- **movenc.c** does not write `AV_DISPOSITION_FORCED` to MP4 track metadata
+- **dvbsubdec.c** does not set `AV_SUBTITLE_FLAG_FORCED` per-rect (stream-level only)
+- **dvbsubenc.c** does not read `AV_SUBTITLE_FLAG_FORCED`
 
 ## Patch Series Structure
 
-Follows CLAUDE.md discipline: each patch compiles independently, new version
-branch `pgs6`, tagged `history/pgs-v6` when complete.
+Branch `pgs6-wip` off `pgs5-8.1`. Clean `pgs6` branch created when series is
+complete, tagged `history/pgs-v6`.
 
-Expected patch count: 5–8 on top of v5's 23 (one per feature + FATE tests).
+| # | Commit | Description | Status |
+|---|--------|-------------|--------|
+| 1 | `1e6b5e3554` | FATE test: palette reuse | Done |
+| 2 | `1cf8b21a4f` | FATE test: multi-object encoding | Done |
+| 3 | `5dec6da839` | FATE test: AP interval | Done |
+| 4 | `261ce70484` | `force_all` AVOption + test | Done |
+| 5 | `aa9f64bdf9` | CDB rate control (`max_cdb_usage`) + test | Done |
+| 6 | — | Bidirectional forced disposition bridge | TODO |
+| 7 | — | MPEG-TS DVB forced types (demux + mux) | TODO |
+| 8 | — | `-forced_subs_filter` CLI option | TODO |
