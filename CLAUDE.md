@@ -86,6 +86,11 @@ Threads coordinate via blocking queues, semaphores, and AtomicBoolean for cancel
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+### Website Style
+- British English in prose (colour, optimisation, behaviour). American English in code identifiers, CSS properties, and API names (color, quantize).
+- Exception: "quantizer" and "quantization" always use American spelling even in prose — the FFmpeg API name `av_quantize_*` is the canonical form and we don't mix spellings of the same term.
+- Never rename directories (`color-distance/`) or CSS properties for British spelling.
+
 ### Honest Attribution
 When Claude simulates expert perspectives, role-plays reviewers, or generates analysis from multiple viewpoints, documentation MUST make clear these are Claude-driven prompts — not human experts. Never imply human review where none occurred. Use language like "Claude-driven review across simulated perspectives" rather than "expert panel review."
 
