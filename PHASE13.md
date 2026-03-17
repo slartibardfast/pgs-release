@@ -1,6 +1,6 @@
 # Phase 13: PGS Encoder Features (v6)
 
-## Status: WIP — 5 of 9 patches committed on `pgs6-wip`
+## Status: Complete — 9 patches on `pgs6-wip`
 
 Encoder features beyond v5's optimisations. Exploration revealed that 13a, 13b,
 and 13c were already implemented in v5 — they needed FATE test coverage only.
@@ -62,7 +62,7 @@ to v7 if needed. Drop-with-warning matches hardware authoring tool behaviour.
 
 Three patches completing the forced subtitle pipeline end-to-end:
 
-### Patch 6: Bidirectional Disposition Bridge — TODO
+### Patch 6: Bidirectional Disposition Bridge — DONE
 
 Bridge forced flags between stream-level and rect-level:
 - **Input→rects:** `AV_DISPOSITION_FORCED` on input stream →
@@ -72,7 +72,7 @@ Bridge forced flags between stream-level and rect-level:
 
 Location: `fftools/ffmpeg_enc_sub.c`
 
-### Patch 7: MPEG-TS DVB Forced Subtitle Types — TODO
+### Patch 7: MPEG-TS DVB Forced Subtitle Types — DONE
 
 Standalone upstream fix. The MPEG-TS demuxer doesn't map DVB subtitling_type
 0x30–0x35 (forced) to `AV_DISPOSITION_FORCED`. The muxer doesn't write 0x30
@@ -81,7 +81,7 @@ hearing-impaired pattern.
 
 Location: `libavformat/mpegts.c`, `libavformat/mpegtsenc.c`
 
-### Patch 8: `-forced_subs_filter` CLI Option — TODO
+### Patch 8: `-forced_subs_filter` CLI Option — DONE
 
 fftools CLI option to split subtitle streams by forced flag:
 - `forced` — encode only forced events
@@ -94,7 +94,7 @@ forced flags are set by the decoder. For text→bitmap (ASS→PGS), use
 
 Location: `fftools/ffmpeg_enc_sub.c`, `fftools/ffmpeg_opt.c`
 
-### Patch 9: `forced_style` AVOption — TODO
+### Patch 9: `forced_style` AVOption — DONE
 
 Map an ASS style name to the forced subtitle flag. Events rendered with the
 matching style get `forced_on_flag=0x40`. Default style name: `"Forced"`.
@@ -141,7 +141,7 @@ complete, tagged `history/pgs-v6`.
 | 3 | `5dec6da839` | FATE test: AP interval | Done |
 | 4 | `261ce70484` | `force_all` AVOption + test | Done |
 | 5 | `aa9f64bdf9` | CDB rate control (`max_cdb_usage`) + test | Done |
-| 6 | — | Bidirectional forced disposition bridge | TODO |
-| 7 | — | MPEG-TS DVB forced types (demux + mux) | TODO |
-| 8 | — | `-forced_subs_filter` CLI option | TODO |
-| 9 | — | `forced_style` AVOption (ASS style → forced flag) | TODO |
+| 6 | `8136e40001` | Bidirectional forced disposition bridge | Done |
+| 7 | `d8aa72b624` | MPEG-TS DVB forced types (demux + mux) | Done |
+| 8 | `24bafce944` | `-forced_subs_filter` CLI option | Done |
+| 9 | `54a51a0eb6` | `forced_style` AVOption (ASS style → forced flag) | Done |
