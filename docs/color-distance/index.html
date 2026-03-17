@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Color Distance Metrics &mdash; FFmpeg Subtitle Tools</title>
+<title>Colour Distance Metrics &mdash; FFmpeg Subtitle Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -261,19 +261,19 @@ footer a { color: var(--fg2); }
 
 <header>
   <p style="margin-bottom:1rem"><a href="../">&larr; FFmpeg Subtitle Tools</a></p>
-  <h1>Color Distance Metrics for Sparse Palette Mapping</h1>
-  <p>Which distance metric picks the best nearest-neighbor in a 16-color DVD palette? 12 metrics tested across 20 diagnostic colors and 262,144 exhaustive inputs.</p>
+  <h1>Colour Distance Metrics for Sparse Palette Mapping</h1>
+  <p>Which distance metric picks the best nearest-neighbour in a 16-colour DVD palette? 12 metrics tested across 20 diagnostic colours and 262,144 exhaustive inputs.</p>
 </header>
 
 <section>
   <h2>The palette</h2>
-  <p>DVD default 16-color global palette. Each subtitle must select 4 colors from this fixed set.</p>
+  <p>DVD default 16-colour global palette. Each subtitle must select 4 colours from this fixed set.</p>
   <div class="palette-grid" id="palette-grid"></div>
 </section>
 
 <section>
   <h2>Comparison</h2>
-  <p>For each test color, 12 distance metrics pick the nearest palette entry. "Claude's opinion" is what Claude Opus 4.6 judged as the perceptually best match.</p>
+  <p>For each test colour, 12 distance metrics pick the nearest palette entry. "Claude's opinion" is what Claude Opus 4.6 judged as the perceptually best match.</p>
   <table class="comparison-table" id="comparison-table"></table>
 </section>
 
@@ -301,7 +301,7 @@ footer a { color: var(--fg2); }
   </table>
 
   <div class="takeaway">
-    <p><strong>No perceptual metric beats sRGB for this sparse palette.</strong> All OkLab variants map chromatic colors to achromatic entries (light-gray) too readily. sRGB's equal-weight RGB channels act as implicit hue preservation. Even CIEDE2000 (the CIE gold standard) maps skin tone to gray.</p>
+    <p><strong>No perceptual metric beats sRGB for this sparse palette.</strong> All OkLab variants map chromatic colours to achromatic entries (light-grey) too readily. sRGB's equal-weight RGB channels act as implicit hue preservation. Even CIEDE2000 (the CIE gold standard) maps skin tone to grey.</p>
   </div>
 </section>
 
@@ -310,7 +310,6 @@ footer a { color: var(--fg2); }
   <div class="links">
     <a href="../">FFmpeg Subtitle Tools</a>
     <a href="../quantizers/">Quantizer comparison</a>
-    <a href="https://github.com/slartibardfast/pgs-release/tree/phase4-dvd-investigation">Source code</a>
   </div>
 </section>
 
@@ -348,7 +347,7 @@ const metricNames = [
 const cases = [
   { hex: '#808080', name: 'mid gray',     expected: 15, reason: 'gray should map to gray, not teal',
     picks: [15, 12, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15] },
-  { hex: '#E0B090', name: 'skin tone',    expected: 13, reason: 'warm color should stay warm (salmon)',
+  { hex: '#E0B090', name: 'skin tone',    expected: 13, reason: 'warm colour should stay warm (salmon)',
     picks: [13, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15] },
   { hex: '#C0C000', name: 'dark yellow',  expected: 4,  reason: 'desaturated yellow should map to yellow',
     picks: [4, 11, 15, 4, 4, 4, 4, 4, 4, 4, 4, 4] },
@@ -437,7 +436,7 @@ palette.forEach((p, i) => {
 });
 
 const table = document.getElementById('comparison-table');
-let thead = '<tr><th>Color</th><th>Input</th><th>Claude\'s<br>opinion</th>';
+let thead = '<tr><th>Colour</th><th>Input</th><th>Claude\'s<br>opinion</th>';
 metricNames.forEach(m => { thead += `<th>${m}</th>`; });
 thead += '</tr>';
 table.innerHTML = thead;
