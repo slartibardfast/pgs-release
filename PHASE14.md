@@ -1,137 +1,111 @@
 # Phase 14: Upstream Submission Restructuring (v7)
 
-## Status: Planning
+## Status: Complete — tagged `history/pgs-v7`
 
-Restructure the v5+v6 patch stack (32 patches on top of FFmpeg 8.1) into
-independent upstream submission series ordered by controversy level.
+Restructured v5+v6 (32 patches on FFmpeg 8.1) into 5 independent upstream
+submission series ordered by controversy level. Each series compiles
+independently and passes FATE tests.
 
 ## Motivation
 
-The current v5+v6 stack couples the PGS encoder (low controversy) with the
-quantization API and text-to-bitmap pipeline (high controversy). If the
-quantization API stalls in review, everything stalls. Decoupling lets the
-encoder merge independently.
+The v5+v6 stack coupled the PGS encoder (low controversy) with the
+quantization API and text-to-bitmap pipeline (high controversy). Decoupling
+lets the encoder merge independently.
 
-## Series Mapping
+## Series A: Standalone fix — `pgs7-a` (1 patch)
 
-Patches 1-43 are upstream FFmpeg 8.1 release commits — not part of our series.
-Mapping starts at patch 44.
+| # | Commit | Description |
+|---|--------|-------------|
+| 1 | `775a82ca1a` | lavf/mpegts: DVB forced types 0x30-0x35 |
 
-### Series A: Standalone fixes (submit first, merge fast)
+No dependencies. Submit immediately.
 
-| v5/v6 # | Commit | Description |
-|---------|--------|-------------|
-| 73 | `0f73c18470` | lavf/mpegts: DVB forced types 0x30-0x35 |
+## Series B: PGS encoder + bitmap features — `pgs7-b` (11 patches)
 
-1 patch. No dependencies. Submit immediately.
+| # | Commit | Description |
+|---|--------|-------------|
+| 1 | `4162b7519f` | lavc/pgssubenc: add HDMV PGS subtitle encoder |
+| 2 | `2d847dcb1b` | lavc/pgssubenc: add palette delta encoding for PDS |
+| 3 | `9dfb7bc71d` | lavf/supenc: compute per-segment DTS for PGS timing model |
+| 4 | `53140c4258` | fftools: set PGS packet DTS per HDMV decoder timing model |
+| 5 | `6aa2169323` | tests: add FATE coverage for PGS encoder features |
+| 6 | `8de64586a1` | tests: add FATE test for PGS palette reuse |
+| 7 | `37db11ba6f` | tests: add FATE test for PGS multi-object encoding |
+| 8 | `eeb354399a` | tests: add FATE test for PGS acquisition point interval |
+| 9 | `2807cf6224` | lavc/pgssubenc: add force_all option for forced subtitles |
+| 10 | `3119f9cc4c` | lavc/pgssubenc: add CDB rate control via max_cdb_usage |
+| 11 | `199083db75` | fftools: add forced subtitle disposition bridge + filter |
 
-### Series B: PGS encoder + bitmap features (the core deliverable)
+No dependencies. The core deliverable — PGS encoder accepting SUBTITLE_BITMAP
+input with 9 FATE tests. DTS, disposition bridge, and forced_subs_filter
+placed in `fftools/ffmpeg_enc.c` (no `ffmpeg_enc_sub.c` at this stage).
 
-| v5/v6 # | Commit | Description | Notes |
-|---------|--------|-------------|-------|
-| 44 | `ac50e9d93d` | lavc/pgssubenc: PGS encoder core | Foundation |
-| 62 | `fa80dd3402` | lavc/pgssubenc: palette delta PDS | Encoder feature |
-| 63 | `6ced590822` | lavf/supenc: per-segment DTS | Muxer timing |
-| 64 | `4b358203de` | fftools: PGS packet DTS | fftools timing |
-| 66 | `5f2ef4c10a` | tests: FATE coverage for v5 | Tests |
-| 67 | `a4262366a4` | tests: palette reuse | Tests |
-| 68 | `4c46183261` | tests: multi-object | Tests |
-| 69 | `88d3bf362e` | tests: AP interval | Tests |
-| 70 | `18e48a70f8` | force_all option | Encoder option |
-| 71 | `d0ba769aac` | max_cdb_usage rate control | Encoder option |
-| 72 | `4f23a1f0ea` | disposition bridge | fftools (bitmap path) |
-| 74 | `4d24411183` | forced_subs_filter | fftools CLI option |
-| 61 | `5856c39963` | doc: PGS encoder docs | Documentation |
+## Series C: Quantization API — `pgs7-c` (10 patches)
 
-~13 patches. Only dependency: FFmpeg 8.1. No new public APIs.
-The encoder accepts SUBTITLE_BITMAP input — works for PGS/DVD remux.
+| # | Commit | Description |
+|---|--------|-------------|
+| 1 | `e313b57287` | lavu: move OkLab palette utilities from libavfilter |
+| 2 | `7622f59026` | lavu: add color quantization API with NeuQuant |
+| 3 | `9115d0d6a2` | lavu: extract palette mapping and dithering from vf_paletteuse |
+| 4 | `65954d7643` | lavfi/vf_paletteuse: use libavutil palette mapping |
+| 5 | `7cf12137d9` | lavu/quantize: add region-weighted palette generation |
+| 6 | `84b2886bff` | lavu: move ELBG from libavcodec to libavutil |
+| 7 | `e78c8b09f6` | lavu: add Median Cut quantizer algorithm |
+| 8 | `d29fa61053` | lavfi/vf_palettegen: use libavutil Median Cut API |
+| 9 | `8abc6f3f29` | lavu: add ELBG quantizer algorithm |
+| 10 | `8054179e0e` | lavc/gif: add RGBA input with built-in quantization |
 
-**Challenge:** Patches 64 and 72 touch `fftools/ffmpeg_enc_sub.c` which is
-created in the text-to-bitmap series (Series D, patch 56). For Series B,
-these fftools changes need to go into `fftools/ffmpeg_enc.c` or a new file
-that doesn't depend on the text-to-bitmap infrastructure.
+Independent of Series B. Submit in parallel. Generic quantization API
+with NeuQuant, Median Cut, ELBG. Also benefits GIF encoding.
 
-**Decision needed:** Do we create a minimal `fftools/ffmpeg_enc_sub.c` stub
-in Series B (DTS + disposition bridge + filter only) and expand it in
-Series D? Or put the DTS/bridge logic in `fftools/ffmpeg_enc.c`?
+Combined base `pgs7-bc` also available (B+C merged for Series D).
 
-### Series C: Quantization API (submit in parallel with B)
+## Series D: Text-to-bitmap pipeline — `pgs7-d` (6 patches)
 
-| v5/v6 # | Commit | Description |
-|---------|--------|-------------|
-| 45 | `73ed205596` | lavu: OkLab palette utilities |
-| 46 | `93305b122a` | lavu: NeuQuant quantization API |
-| 47 | `c9a1ee2801` | lavu: palette mapping extraction |
-| 48 | `7ae7415b05` | lavfi/vf_paletteuse: use lavu palette mapping |
-| 49 | `bb8c24b786` | lavu/quantize: region-weighted palette |
-| 50 | `b02798b6d9` | lavu: ELBG move from lavc to lavu |
-| 51 | `8b1b76834c` | lavu: Median Cut quantizer |
-| 52 | `7b58c356fb` | lavfi/vf_palettegen: use lavu Median Cut |
-| 53 | `483c750c90` | lavu: ELBG quantizer algorithm |
-| 57 | `72d7958027` | lavc/gif: RGBA input with quantization |
+| # | Commit | Description |
+|---|--------|-------------|
+| 1 | `6968948034` | lavu: move subtitle bitmap utilities to libavutil |
+| 2 | `87fa47ebf1` | lavfi: add text subtitle rendering utility via libass |
+| 3 | `b6b6e8ce2e` | fftools: add text-to-bitmap subtitle conversion |
+| 4 | `1f52d0593e` | fftools: wire subtitle conversion into encoding pipeline |
+| 5 | `cc02b2ea5c` | fftools: add event lookahead window for overlapping subtitles |
+| 6 | `bd31b3ba45` | lavc/pgssubenc, fftools: add forced_style option |
 
-~10 patches. Independent of Series B. Adds generic quantization API to
-libavutil with NeuQuant, Median Cut, and ELBG algorithms. Also benefits
-GIF encoding (patch 57).
+Depends on B + C. Creates `fftools/ffmpeg_enc_sub.c` with text-to-bitmap
+pipeline, event lookahead, and forced_style ASS matching. D4 includes a
+no-op `ffmpeg_dec_sub.h` stub (replaced by Series E's real implementation).
 
-### Series D: Text-to-bitmap pipeline (after B + C merge)
+## Series E: OCR — `pgs7-e` (2 patches)
 
-| v5/v6 # | Commit | Description |
-|---------|--------|-------------|
-| 54 | `cdf27be210` | lavu: subtitle bitmap utilities |
-| 55 | `bc32c66bb9` | lavfi: libass text rendering utility |
-| 56 | `fcb6fd01f3` | fftools: text-to-bitmap conversion |
-| 60 | `77a0deb623` | fftools: wire conversion into pipeline |
-| 65 | `55a025810a` | fftools: event lookahead window |
-| 75 | `6190c8e773` | forced_style option |
+| # | Commit | Description |
+|---|--------|-------------|
+| 1 | `883f340a48` | lavfi: add bitmap subtitle OCR utility via Tesseract |
+| 2 | `2d58ff3f15` | fftools: add bitmap-to-text subtitle conversion via OCR |
 
-~6 patches. Depends on B (encoder) + C (quantization). This is the
-controversial subtitle infrastructure — libass rendering, fftools subtitle
-conversion, overlapping event handling.
+Depends on D. Optional. Replaces `ffmpeg_dec_sub.h` stub with real OCR.
 
-### Series E: OCR (optional, after D)
+## Submission Order
 
-| v5/v6 # | Commit | Description |
-|---------|--------|-------------|
-| 58 | `94b54ae84a` | lavfi: Tesseract OCR utility |
-| 59 | `ac5ed1f991` | fftools: bitmap-to-text via OCR |
+1. **Series A** — submit first (1 patch, quick win, builds reviewer rapport)
+2. **Series B** — submit next (11 patches, the money shot — PGS encoder)
+3. **Series C** — submit in parallel with B (10 patches, quantization API)
+4. **Series D** — after B+C merge (6 patches, text-to-bitmap — controversial)
+5. **Series E** — after D merge (2 patches, OCR — optional)
 
-2 patches. Optional. Adds Tesseract-based PGS/DVD → SRT conversion.
+## Design Decisions
 
-## Implementation: v7 branch structure
+- **fftools/ffmpeg_enc.c for Series B**: DTS, disposition bridge, and
+  forced_subs_filter placed in `do_subtitle_out()` rather than creating
+  `ffmpeg_enc_sub.c`. Series D creates the file and migrates the logic.
 
-- `pgs7-wip` — work branch for restructuring
-- `pgs7-a` — Series A (1 patch, mpegts fix)
-- `pgs7-b` — Series B (~13 patches, encoder + bitmap features)
-- `pgs7-c` — Series C (~10 patches, quantization API)
-- `pgs7-d` — Series D (~6 patches, text-to-bitmap)
-- `pgs7-e` — Series E (2 patches, OCR)
-- `pgs7` — final combined branch (= v6 equivalent, all series merged)
+- **quantize_method removed from Series B**: The AVOption references
+  `AV_QUANTIZE_*` enums from Series C. For B standalone, the option is
+  omitted. Series D adds it when the quantization API is available.
 
-Each series branch is based on `upstream/master` (or the prior series for
-D and E). The combined `pgs7` should produce identical output to `pgs6`.
+- **ffmpeg_dec_sub.h stub**: Series D's wiring patch includes OCR function
+  stubs so it compiles without Series E. Series E replaces the stubs.
 
-## Key challenges
+## Verification
 
-1. **fftools/ffmpeg_enc_sub.c split**: This file contains both bitmap-path
-   code (DTS, disposition bridge, forced filter) and text-to-bitmap code
-   (libass rendering, quantization, event lookahead). Series B needs the
-   bitmap-path parts without depending on Series D's text-to-bitmap parts.
-
-2. **Patch splitting**: Some v5 commits may need to be split. E.g., patch 61
-   (docs) covers both PGS encoder and OCR options.
-
-3. **Header dependencies**: `pgs-test-util.h` and shared headers need to
-   exist in Series B even though some functions are only used by Series D tests.
-
-4. **Compilation verification**: Each series must compile independently.
-   This needs `git rebase --exec 'make -j$(nproc)'` per series branch.
-
-## Next steps
-
-1. Decide on the fftools/ffmpeg_enc_sub.c split strategy
-2. Create Series A branch (trivial — 1 cherry-pick)
-3. Create Series B branch (most work — extract encoder-only code)
-4. Verify B compiles and passes FATE without C/D/E
-5. Create C, D, E branches
-6. Verify combined pgs7 matches pgs6 output
+All series compile independently (`git rebase --exec 'make -j$(nproc)'`).
+All FATE tests pass on each series tip. Tagged `history/pgs-v7` on `pgs7-e`.

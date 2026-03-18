@@ -131,17 +131,17 @@ Location: `libavcodec/pgssubenc.c` (AVOption), `fftools/ffmpeg_enc_sub.c`
 
 ## Patch Series Structure
 
-Branch `pgs6-wip` off `pgs5-8.1`. Clean `pgs6` branch created when series is
-complete, tagged `history/pgs-v6`.
+Branch `pgs6` off `pgs5-8.1`, tagged `history/pgs-v6`. Restructured for
+upstream submission as v7 (5 independent series, see PHASE14.md).
 
-| # | Commit | Description | Status |
-|---|--------|-------------|--------|
-| 1 | `1e6b5e3554` | FATE test: palette reuse | Done |
-| 2 | `1cf8b21a4f` | FATE test: multi-object encoding | Done |
-| 3 | `5dec6da839` | FATE test: AP interval | Done |
-| 4 | `261ce70484` | `force_all` AVOption + test | Done |
-| 5 | `aa9f64bdf9` | CDB rate control (`max_cdb_usage`) + test | Done |
-| 6 | `8136e40001` | Bidirectional forced disposition bridge | Done |
-| 7 | `d8aa72b624` | MPEG-TS DVB forced types (demux + mux) | Done |
-| 8 | `2d3fbf3ba0` | `forced_subs_filter` CLI option | Done |
-| 9 | `842ea76bba` | `forced_style` AVOption (ASS style → forced flag) | Done |
+| # | Commit (pgs6) | Description | Status |
+|---|---------------|-------------|--------|
+| 1 | `a4262366a4` | FATE test: palette reuse | Done |
+| 2 | `4c46183261` | FATE test: multi-object encoding | Done |
+| 3 | `88d3bf362e` | FATE test: AP interval | Done |
+| 4 | `18e48a70f8` | `force_all` AVOption + test | Done |
+| 5 | `d0ba769aac` | CDB rate control (`max_cdb_usage`) + test | Done |
+| 6 | `4f23a1f0ea` | Bidirectional forced disposition bridge | Done |
+| 7 | `0f73c18470` | MPEG-TS DVB forced types (demux + mux) | Done |
+| 8 | `4d24411183` | `forced_subs_filter` CLI option | Done |
+| 9 | `6190c8e773` | `forced_style` AVOption (ASS style → forced flag) | Done |
