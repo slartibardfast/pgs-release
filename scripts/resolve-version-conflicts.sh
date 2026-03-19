@@ -233,7 +233,7 @@ if theirs_lib and theirs_lib in ours_versions:
     new_minor = ours_versions[theirs_lib][1] + 1
     theirs = re.sub(
         r'(- ' + theirs_lib + r' \d+\.)\d+(\.)',
-        f'\\g<1>{new_minor}\\2', theirs, count=1)
+        r'\g<1>' + str(new_minor) + r'\2', theirs, count=1)
 
 # Combine: theirs (new) on top, then ours (existing)
 combined = theirs + '\n\n' + ours
