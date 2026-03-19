@@ -15,7 +15,7 @@ _Scratch buffer — what we're doing right now._
   fate-suite samples or pixel-matched system libs).
 - [x] **quantizers/index.html** — updated pgs5 → pgs7
 - [x] **color-distance/index.html** — checked, no stale links
-- [ ] **Co-Authored-By** — inconsistent across patches ("Claude Opus 4.6" vs
+- [x] **Co-Authored-By** — inconsistent across patches ("Claude Opus 4.6" vs
   "Claude Opus 4.6 (1M context)"). Standardise on next rebase.
 
 ### Encoder improvements (deferred from Phase 8)
