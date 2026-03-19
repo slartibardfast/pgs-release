@@ -5,7 +5,7 @@
 _Scratch buffer — what we're doing right now._
 
 v8 development on `pgs8-wip` (master base, off `pgs7`).
-1 patch so far: rect bounds validation.
+2 patches: rect bounds validation, NeuQuant minimum iterations.
 
 ## Outstanding Items
 
@@ -24,12 +24,11 @@ v8 development on `pgs8-wip` (master base, off `pgs7`).
 - [x] **Object version tracking** — already implemented in v5. Reset on
   Epoch Start (line 723), passed to ODS (742), incremented after write (745).
   PHASE8.md said deferred but it was done.
-- [ ] **Window bounds validation** — added `rect->x + rect->w <= avctx->width`
-  check (on pgs7-8.1, uncommitted). No minimum size in PGS spec, but
-  PunkGraphicStream has `minimumSize = 503` pixels for quantizer quality.
-  Better approach: pad tiny bitmaps with transparent pixels before
-  quantization so NeuQuant gets enough samples, then map the original
-  small image to the resulting palette. Goes in fftools or av_quantize_*.
+- [x] **Window bounds validation** — rect bounds check in pgssubenc.c
+  (pgs8-wip patch 1). Rejects rects extending beyond video frame.
+- [x] **NeuQuant minimum iterations** — clamp samplepixels to PRIME4 (503)
+  in neuquant.c (pgs8-wip patch 2). Fixes quality degradation on tiny
+  bitmaps. Coprime walk wraps uniformly.
 - [ ] **SUPer reference validation** — never compared output against
   cubicibo's hardware-validated reference encoder. Would catch spec
   interpretation differences.
