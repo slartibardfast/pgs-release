@@ -4,7 +4,8 @@
 
 _Scratch buffer — what we're doing right now._
 
-(empty)
+v8 development on `pgs8-wip` (master base, off `pgs7`).
+1 patch so far: rect bounds validation.
 
 ## Outstanding Items
 
@@ -20,12 +21,15 @@ _Scratch buffer — what we're doing right now._
 
 ### Encoder improvements (deferred from Phase 8)
 
-- [ ] **Object version tracking** — ODS always writes `object_version = 0`.
-  Should increment within an epoch when the same `object_id` gets new data.
-  Hardware decoders may use this to detect stale objects. ~10 lines in
-  `pgssubenc.c`. PHASE8.md §8f.
-- [ ] **Window sizing validation** — no enforcement of minimum window size
-  per HDMV spec. PHASE8.md §8f.
+- [x] **Object version tracking** — already implemented in v5. Reset on
+  Epoch Start (line 723), passed to ODS (742), incremented after write (745).
+  PHASE8.md said deferred but it was done.
+- [ ] **Window bounds validation** — added `rect->x + rect->w <= avctx->width`
+  check (on pgs7-8.1, uncommitted). No minimum size in PGS spec, but
+  PunkGraphicStream has `minimumSize = 503` pixels for quantizer quality.
+  Better approach: pad tiny bitmaps with transparent pixels before
+  quantization so NeuQuant gets enough samples, then map the original
+  small image to the resulting palette. Goes in fftools or av_quantize_*.
 - [ ] **SUPer reference validation** — never compared output against
   cubicibo's hardware-validated reference encoder. Would catch spec
   interpretation differences.
