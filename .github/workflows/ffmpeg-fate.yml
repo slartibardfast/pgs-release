@@ -62,10 +62,10 @@ jobs:
         working-directory: ffmpeg
         run: make -j$(nproc)
 
-      # API tests: self-contained, no external library rendering dependency.
-      # sub-pgs-overlap and sub-ocr-roundtrip use framecrc/transcode which
-      # depend on system libass/tesseract versions matching the reference
-      # output — excluded here, validated in local FATE with pinned libs.
+      # 15 self-contained API tests (no external library rendering dependency).
+      # Excluded: sub-pgs (needs fate-suite samples), sub-pgs-overlap and
+      # sub-ocr-roundtrip (depend on system libass/tesseract pixel output
+      # matching references — validated locally with pinned libs).
       - name: Run FATE tests
         working-directory: ffmpeg
         run: |
@@ -77,6 +77,11 @@ jobs:
             fate-api-pgs-coalesce \
             fate-api-pgs-rectsplit \
             fate-api-pgs-palette-delta \
+            fate-api-pgs-palette-reuse \
+            fate-api-pgs-multi-object \
+            fate-api-pgs-ap-interval \
             fate-api-pgs-dts \
             fate-api-pgs-overlap-verify \
+            fate-api-pgs-forced \
+            fate-api-pgs-rate-control \
             fate-gifenc-rgba
